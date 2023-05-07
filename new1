@@ -1,0 +1,2476 @@
+function getSettings(v) {
+    pTime = v.split("||")[0];
+    saveFont = v.split("||")[1];
+    preview = v.split("||")[2];
+}
+
+function scriptPath(loc, packFolder) {
+    pkgFolder = packFolder;
+    if (new Folder(pkgFolder).exists !== true) {
+            pkgFolder = "~/Documents";
+        alert("Defult Folder Path Not Found.\nClose and reopen the extension.");
+    }
+    var dlg = new Window("dialog", "Important warning");
+    msgPnl = dlg.add("panel", [25, 15, 355, 55], "Note the following:");
+    msgPnl.add("statictext", [10, -50, 355, 11], "You must save your project before doing anything.");
+    msgPnl.add("statictext", [10, 0, 355, 11], "Because your project closes and reopens for saving objects.");
+    button = dlg.add("button", undefined, "OK");
+    dlg.layout.layout(true);
+    button.onClick = function() {
+        dlg.hide();
+    };
+    packageFolder = new Folder(pkgFolder + "/SaveObjects_Assets");
+    presetFolder = new Folder(pkgFolder + "");
+    aa = presetFolder.fsName;
+    if (packageFolder.exists !== true) {
+        dlg.show();
+        try {
+            copyFolder(new Folder(loc + "/SaveObjects_Assets"), new Folder(pkgFolder + "/SaveObjects_Assets"));
+            alert("The default package added.");
+            $.evalFile(loc + "/jsx/help.jsx");
+        } catch (e) {
+
+        }
+        return aa + "||0";
+    }
+    presetFolder = new Folder(pkgFolder + "");
+    aa = presetFolder.fsName;
+    return aa + "||1";
+}
+
+function findType(file) {
+    var folderName = file.split("/")[0];
+    var fileName = file.split("/")[1];
+    var folderPath = new Folder([pkgFolder + "/SaveObjects_Assets/" + folderName + "/" + fileName]);
+    var files = folderPath.getFiles();
+    for (var i = 0; i < files.length; i += 1) {
+        fileType = files[i].name.split(".")[files[i].name.split(".").length - 1];
+        if (fileType == "psd") {
+            return "psd";
+        }
+    }
+}
+
+function newFolder(folderName) {
+    presetFolder = new Folder(pkgFolder + "");
+    aa = presetFolder.fsName;
+    newFolder1 = aa + "/SaveObjects_Assets/" + folderName;
+    new Folder(newFolder1).create();
+}
+
+function renameMenue(file) {
+    var folderName = encodeURIComponent(file.split(",")[0].split("/")[1]);
+    var newName = encodeURIComponent(file.split(",")[1]);
+    var folderPath = new Folder([pkgFolder + "/SaveObjects_Assets/" + encodeURIComponent(file.split(",")[0])]);
+    var files = folderPath.getFiles();
+    for (var i = 0; i < files.length; i += 1) {
+        if (files[i].name.search(encodeURIComponent(folderName).replace("(", "\\(").replace(")", "\\)")) != -1) {
+            renamedName = encodeURIComponent(files[i].name).replace(encodeURIComponent(folderName), encodeURIComponent(newName));
+            searchedFile = files[i];
+            searchedFile.rename(decodeURIComponent(renamedName));
+        }
+    }
+    var rootFolder = new File([folderPath]);
+    rootFolder.rename(decodeURIComponent(newName));
+}
+
+function editSource(file) {
+    var folderName = file.split("/")[1];
+    var folderPath = pkgFolder + "/SaveObjects_Assets/" + file + "/" + folderName + ".aep";
+    var folderPath1 = pkgFolder + "/SaveObjects_Assets/" + file + "/Composition/" + folderName + ".aep";
+    var commentFile = new File([pkgFolder + "/SaveObjects_Assets/" + file + "/!.txt"]);
+    var expFile = new File([pkgFolder + "/SaveObjects_Assets/" + file + "/" + folderName + ".exp"]);
+    var jsxFile = new File([pkgFolder + "/SaveObjects_Assets/" + file + "/" + folderName + ".jsx"]);
+    var spdFile = new File([pkgFolder + "/SaveObjects_Assets/" + file + "/" + folderName + ".spd"]);
+    var mrkFile = new File([pkgFolder + "/SaveObjects_Assets/" + file + "/" + folderName + ".mrk"]);
+    var mskFile = new File([pkgFolder + "/SaveObjects_Assets/" + file + "/" + folderName + ".msk"]);
+    var aepFile = new File([folderPath]);
+    var aepFile1 = new File([folderPath1]);
+    if (aepFile.exists) {
+        app.open(aepFile)
+    }
+    if (aepFile1.exists) {
+        app.open(aepFile1)
+    }
+    if (expFile.exists) {
+        editCode(folderName, expFile, commentFile, "exp")
+    }
+    if (jsxFile.exists) {
+        editCode(folderName, jsxFile, commentFile, "jsx")
+    }
+    if (spdFile.exists) {
+        editCode(folderName, spdFile, commentFile, "spd")
+    }
+    if (mrkFile.exists) {
+        editCode(folderName, mrkFile, commentFile, "mrk")
+    }
+    if (mskFile.exists) {
+        editCode(folderName, mskFile, commentFile, "msk")
+    }
+}
+
+function editCode(name, pathFile, commentFile, fileType) {
+    var p = pathFile;
+    p.encoding = "UTF8";
+    p.open("r");
+    var content = p.read();
+    p.close();
+    var t = commentFile;
+    t.encoding = "UTF8";
+    t.open("r");
+    var comContent = t.read();
+    t.close();
+    var win = new Window("palette", "Edit Code", [100, 0, 780, 550]);
+    this.windowRef = win;
+    win.btnName = win.add("group", [10, 10, 800, 600]);
+    win.btnName.text = win.btnName.add("statictext", [10, 10, 600, 25], "Name:");
+    btnName = win.btnName.add("edittext", [10, 30, 650, 60], name, {
+        multiline: false
+    });
+    btnName.enabled = false;
+    win.btnPanel = win.add("group", [10, 50, 800, 600]);
+    win.btnPanel.text = win.btnPanel.add("statictext", [10, 20, 600, 60], "Codes:");
+    win.btnPanel.warnBtn = win.btnPanel.add("edittext", [10, 50, 650, 320], content, {
+        multiline: true,
+        scrollable: true
+    });
+    win.btnPanel.text1 = win.btnPanel.add("statictext", [10, 230, 650, 440], "Comment:");
+    commentText = win.btnPanel.add("edittext", [10, 350, 650, 440], comContent, {
+        multiline: true
+    });
+    var effectRow = win.btnPanel.add("group {alignChildren: \"left\",orientation: \"row\"}", [0, 450, 700, 480]);
+    win.btnPanel.aesBtn = effectRow.add("button", [10, 0, 130, 30], "Save");
+    win.btnPanel.aesBtn.onClick = function() {
+        writeFile(pathFile, win.btnPanel.warnBtn.text);
+        writeFile(commentFile, commentText.text);
+    };
+    win.center();
+    win.show();
+}
+
+function openLocation(file) {
+    $.sleep(500);
+    var folderPath = pkgFolder + "/SaveObjects_Assets/" + file;
+    var folder = new Folder([folderPath]);
+    try {
+        var cmd = $.os.indexOf("Win") != -1 ? "explorer " + Folder.decode(folder.fsName) : "open \"" + Folder.decode(folder.fsName) + "\"";
+        system.callSystem(cmd);
+    } catch (e) {
+        alert(e);
+    }
+}
+
+function setThumb(file) {
+    scriptPath = file.split("||")[0];
+    app.beginUndoGroup("Comp to Region of Interest");
+    app.executeCommand(2997);
+    saveSequence(scriptPath, file.split("||")[1]);
+    app.endUndoGroup();
+    app.executeCommand(16);
+}
+
+function delFile(filePath) {
+    folder = new Folder(filePath);
+    folder.remove();
+    var files = folder.getFiles();
+    var N = files.length;
+    for (var n = 0; n < N; n += 1) {
+        if (files[n] instanceof File) {
+            files[n].remove();
+        } else {
+            folder1 = new Folder(filePath[n]);
+            var files1 = folder.getFiles();
+            var M = files1.length;
+            for (var m = 0; m < M; m += 1) {
+                if (files1[m] instanceof File) {
+                    files1[m].remove();
+                } else {
+                    delFile(files1[m]);
+                }
+            }
+            delFile(files[n]);
+        }
+    }
+    folder.remove();
+}
+
+function setStar(aa) {
+    extensionPath = new File(aa.split("||")[0]).fsName;
+    toPath = new File(pkgFolder + "/SaveObjects_Assets/" + aa.split("||")[1] + "/!.str").fsName;
+    star = aa.split("||")[2];
+    if (star == "1.png") {
+        copyFile(new File(extensionPath), new File(toPath))
+    } else {
+        deletFile = new File(toPath);
+        deletFile.remove();
+    }
+}
+
+function delFile1(filePath) {
+    $.sleep(200);
+    folder = new Folder(filePath);
+    folder.remove();
+}
+
+function delFolder(filePath) {
+    folders = filePath.split("**")[1].split("||");
+    groupName = filePath.split("**")[0];
+    for (var j = 0; j < folders.length; j += 1) {
+        itemName = folders[j];
+        delFile(files[n]);
+    }
+}
+
+function getFolders() {
+    folders = "";
+    assetsFolder = new Folder(pkgFolder + "/SaveObjects_Assets/");
+    var sourceFiles = assetsFolder.getFiles();
+    for (var i = 0; i < sourceFiles.length; i += 1) {
+        if (sourceFiles[i].name.slice(0, 2) != ".D") {
+            folders += sourceFiles[i].name + "||"
+        }
+    }
+    return folders;
+}
+
+function getFiles(locfolder1) {
+    folder1 = locfolder1.split("||")[1];
+    loc = locfolder1.split("||")[0];
+    assetsFolder1 = new Folder(pkgFolder + "/SaveObjects_Assets/" + folder1);
+    filse = " <ul class='tiles-wrap animated' id='wookmark1' style='top:-10px;background-color:rgb(37, 37, 37); ;'>";
+    var sourceFiles1 = assetsFolder1.getFiles();
+    for (var i = 0; i < sourceFiles1.length; i += 1) {
+        var star = "star0";
+        var starSearch = "";
+        var opacity = "";
+        try {
+            subFolder = new Folder([pkgFolder + "/SaveObjects_Assets/" + folder1 + "/" + sourceFiles1[i].name]);
+            subFiles = subFolder.getFiles();
+            var toolTip = "";
+            for (var f = 0; f < subFiles.length; f += 1) {
+                var thumbFile = "";
+                fileType = subFiles[f].name.split(".")[subFiles[f].name.split(".").length - 1];
+                if (fileType == "txt") {
+                    var p = subFiles[f];
+                    p.encoding = "UTF8";
+                    p.open("r");
+                    var content = p.read();
+                    p.close();
+                    toolTip = content.replace(/"/g, "'");
+                    continue;
+                }
+                if (fileType == "str") {
+                    star = "star1";
+                    starSearch = "##";
+                    opacity = "style=\"opacity:0.9;\"";
+                    continue;
+                }
+                if (fileType == "gif") {
+                    thumbFile = subFolder.fsName + "/" + subFiles[f].name;
+                    break;
+                }
+                if (fileType == "png") {
+                    thumbFile = subFolder.fsName + "/" + subFiles[f].name;
+                    break;
+                }
+                if (fileType == "jpg" || fileType == "JPG") {
+                    thumbFile = subFolder.fsName + "/" + subFiles[f].name;
+                    break;
+                }
+                if (fileType == "bmp") {
+                    thumbFile = subFolder.fsName + "/" + subFiles[f].name;
+                    break;
+                }
+                if (fileType == "mp4") {
+                    thumbFile = subFolder.fsName + "/" + subFiles[f].name;
+                    break;
+                }
+                if (fileType == "ffx") {
+                    thumbFile = loc + "/icons/ffx.png";
+                    continue;
+                }
+                if (fileType == "aep") {
+                    thumbFile = loc + "/icons/aep.png";
+                    continue;
+                }
+                if (fileType == "exp") {
+                    thumbFile = loc + "/icons/exp.png";
+                    continue;
+                }
+                if (fileType == "msk") {
+                    thumbFile = loc + "/icons/mask.png";
+                    continue;
+                }
+                if (fileType == "mrk") {
+                    thumbFile = loc + "/icons/marker.png";
+                    continue;
+                }
+                if (fileType == "eps") {
+                    thumbFile = loc + "/icons/eps.png";
+                    continue;
+                }
+                if (fileType == "mov" || fileType == "MOV" || fileType == "avi" || fileType == "AVI") {
+                    thumbFile = loc + "/icons/media.png";
+                    continue;
+                }
+                if (fileType == "jsx" || fileType == "jsxbin") {
+                    thumbFile = loc + "/icons/jsx.png";
+                    continue;
+                }
+                if (fileType == "wav") {
+                    thumbFile = loc + "/icons/audioFile.png";
+                    continue;
+                }
+            }
+        } catch (e) {
+
+        }
+        if (sourceFiles1[i].name.slice(0, 2) != ".D") {
+    thumbTag = "<img class='thumb' title =\"" + toolTip + "\" onClick=\"apply(this.id);\" onmouseover=\"mouseover(this.id);\" oncontextmenu=\"showOptions(this.id);\" class=\"dynamic\" onmouseleave=\"dynamicLeave(this.id);\" src=\"" + thumbFile + "\" onerror=\"this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/7/75/No_image_available.png' \" alt=\"" + fileType + "\"  id=\"" + decodeURIComponent(sourceFiles1[i].name) + "\"  name=\"" + decodeURIComponent(sourceFiles1[i].name) + "\" style=\"display:block;cursor: pointer;width:100% ;min-height: 10px;color:rgb(92, 92, 92);font:15px compCode;font-weight:undefined;stopped ;\">"
+}
+
+        if (thumbFile == "") {
+            thumbTag = ""
+        }
+        if (fileType == "mp4") {
+        thumbTag = "<video class='thumb' autoplay loop muted style=\"width:100%;\" src=\"" + thumbFile + "\" onClick=\"apply(this.id);\" oncontextmenu=\"showOptions(this.id);\" class=\"dynamic\" alt=\"" + fileType + "\" id=\"" + decodedName + "\" name=\"" + decodedName + "\" style=\"cursor: pointer;width:100% ;min-height: 35px;color:rgb(92, 92, 92);font:15px Arial;\"></video>"
+}
+
+        if (sourceFiles1[i].name.slice(0, 2) != ".D") {
+    filse += "<li class=\"row1\" id=\"row_" + decodeURIComponent(sourceFiles1[i].name) + "\" oncontextmenu=\"showOptions(this.id.split('row_')[1]);\"  style=\"width: 110px;background-color:rgb(37, 37, 37);cursor: pointer; overflow: hidden;line-height: .2em;\" id=\"container3\">" + thumbTag + "<div style=\"background-color:none;position:absolute;height:0;width:0; bottom: 10px; font-size: 10px;color: lightyellow;width: fit-content;height: fit-content;\"></div><div class=\"overlay\" " + opacity + " id=\"overlay3\"><img class=\"menue\" style=\" z-index=" + i + "; opacity:1; position: absolute;top : -8px; right:2px;width:8px;\"  type=\"image\" title='" + decodeURIComponent(sourceFiles1[i].name) + "' src='icons/" + star + ".png' id=\"btn_star\" onclick=\"if(this.src.slice(this.src.length-5,this.src.length+5)=='1.png')this.src='icons/star0.png';else {this.src='icons/star1.png';} setStar(title+'||'+this.src.slice(this.src.length-5,this.src.length+5));changeBookmark(this.title);\"><p style='display:none;'id=\"str_" + decodeURIComponent(sourceFiles1[i].name) + "\">" + starSearch + decodeURIComponent(sourceFiles1[i].name) + "</p></div ><div class='ll' style=';border-bottom-right-radius :5px;;border-bottom-left-radius :2px;background-color:none;width:calc(100% - 9px);' onclick=\"apply(this.parentNode.id.split('row_')[1]);\"><span  style='height:5px;font-size: 10px;color: lightyellow; font:normal 7pt Verdana; white-space:pre-wrap; ' oncontextmenu=\"showOptions(this.id.slice(1,1000));\" class=\"titleSpan\" id=\"a" + decodeURIComponent(sourceFiles1[i].name) + "\"><bold><span class='dot'>" + i + 1 + "&nbsp;&nbsp;</span></bold>&nbsp;-&nbsp;" + decodeURIComponent(sourceFiles1[i].name.replace(/-/g, "_")) + " </span></div></div></div></li>"
+}
+
+    }
+    var subFolders = packageFolder.getFiles();
+    searchResult = "";
+    for (var i = 0; i < subFolders.length; i += 1) {
+        subsub = new Folder([pkgFolder + "/SaveObjects_Assets/" + subFolders[i].name]);
+        var subsubFolders = subsub.getFiles();
+        if (subFolders[i].name.slice(0, 2) != ".D") {
+            searchResult = searchResult + "--" + subFolders[i].name + "::"
+        }
+        for (var j = 0; j < subsubFolders.length; j += 1) {
+            subsubFoldersName = subsubFolders[j].name;
+            if (subsubFolders[j].name.slice(0, 2) != ".D") {
+                searchResult = searchResult + "||" + subsubFolders[j].name
+            }
+        }
+    }
+    return filse + "</ul>";
+}
+
+function addFake(folder1) {
+    assetsFolder1 = new Folder(pkgFolder + "/SaveObjects_Assets/" + folder1);
+folderName = encodeURI(folder1.split("||")[0]);
+saveName = encodeURI(folder1.split("||")[1]);
+
+
+    // 解码 folderName 和 saveName
+    var folderNameDecoded = decodeURIComponent(folderName);
+    var saveNameDecoded = decodeURIComponent(saveName);
+
+    filse = "";
+ thumbTag = "<img onClick=\"apply(this.id);\" onmouseover=\"mouseover(this.id);\" oncontextmenu=\"showOptions(this.id);\" class=\"dynamic\" onmouseleave=\"dynamicLeave(this.id);\" src=\"" + pkgFolder + "/SaveObjects_Assets/" + decodeURIComponent(folderNameDecoded) + "/" + decodeURIComponent(saveNameDecoded) + "/" + decodeURIComponent(saveNameDecoded) + ".png\"  id=\"" + decodeURIComponent(saveNameDecoded) + "\" alt=\"png\" name=\"" + decodeURIComponent(saveNameDecoded) + "\"  style=\"cursor: pointer;width:100% ;min-height: 35px;color:rgb(92, 92, 92);font:15px compCode;font-weight:undefined;\">";
+
+    // 使用解码后的变量
+ filse += "<div class=\"row1\" id=\"row_" + saveNameDecoded + "\">\t<div class=\"column\" style=\"  overflow: hidden;border-bottom: 2px solid #1c1c1c;\" id=\"container3\">" + thumbTag + "<div style=\"pointer-events: none;background-color:blue;position:absolute;height:0;width:0; bottom: 20px; font-size: 10px;color: lightyellow;\"><div title=\"" + saveNameDecoded + "\" class=\"lable\" style=\"pointer-events: none;border-radius: 0px 5px 0px 0px;background-color:  #1c1c1c;overflow: hidden;position:absolute;height:10px;bottom:-21px;\"><span style=\"color:white;font-weight:bold\">&nbsp;&nbsp;1&nbsp;&nbsp;</span>-&nbsp;<span id=\"a" + saveNameDecoded + "\" onclick=\"rename(this.id);\">" + saveNameDecoded + "</span>&nbsp;&nbsp;&nbsp;&nbsp;</div></div><div class=\"overlay\"  id=\"overlay3\"><img class=\"menue\" style=\" opacity:1; position: absolute;bottom : -11px; right:-4px;width:10px;\" title=\"" + saveNameDecoded + "\" type=\"image\" src=\"icons/star0.png\" id=\"btn_star\" onclick=\"if(this.src.slice(this.src.length-5,this.src.length+5)=='1.png')this.src='" + loc + "/icons/star0.png';else src='" + loc + "/icons/star1.png';setStar(title+'||'+this.src.slice(this.src.length-5,this.src.length+5))\"><p id=\"str_" + saveNameDecoded + "\">" + saveNameDecoded + "</p></div></div></div>";
+   return filse;
+}
+
+
+function contains(a, obj) {
+    for (var i = 0; i < a.length; i += 1) {
+        if (a[i] === obj) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function checkVector(comp) {
+    for (var i = 1; i <= comp.numLayers; i += 1) {
+        if (comp.layer(i).matchName !== "ADBE Vector Layer" && comp.layer(i).matchName !== "ADBE Text Layer" && comp.layer(i).matchName !== "ADBE Light Layer" && comp.layer(i).matchName !== "ADBE Camera Layer") {
+            return false;
+        }
+    }
+    return true;
+}
+
+function newCode(filePath) {
+    scriptPath = filePath.split("||")[0];
+    filePath = filePath.split("||")[1].split("/");
+    var tcd_strHelpText = "";
+    var win = new Window("dialog", "Save Code", [100, 0, 780, 550]);
+    this.windowRef = win;
+    win.btnName = win.add("group", [10, 10, 800, 600]);
+    win.btnName.text = win.btnName.add("statictext", [10, 10, 600, 25], "Name:");
+    btnName = win.btnName.add("edittext", [10, 30, 650, 60], tcd_strHelpText, {
+        multiline: false
+    });
+    btnName.text = filePath[1];
+    win.btnPanel = win.add("group", [10, 50, 800, 600]);
+    win.btnPanel.text = win.btnPanel.add("statictext", [10, 20, 600, 60], "Codes:");
+    win.btnPanel.warnBtn = win.btnPanel.add("edittext", [10, 50, 650, 320], tcd_strHelpText, {
+        multiline: true
+    });
+    win.btnPanel.text1 = win.btnPanel.add("statictext", [10, 230, 650, 440], "Comment:");
+    commentText = win.btnPanel.add("edittext", [10, 350, 650, 440], tcd_strHelpText, {
+        multiline: true
+    });
+    var effectRow = win.btnPanel.add("group {alignChildren: \"left\",orientation: \"row\"}", [0, 450, 700, 480]);
+    win.btnPanel.aesBtn = effectRow.add("button", [10, 0, 130, 30], "Save JSX File");
+    win.btnPanel.expBtn = effectRow.add("button", [170, 0, 300, 30], "Save As Expression");
+    btnName.active = true;
+    win.btnPanel.aesBtn.onClick = function() {
+        if (btnName.text == "Name") {
+            alert("Choose a name for your code...");
+            return;
+        }
+        presetFolder = new Folder(pkgFolder + "");
+        aa = presetFolder.fsName;
+        newFolder1 = aa + "/SaveObjects_Assets/" + filePath[0] + "/" + btnName.text;
+        new Folder(newFolder1).create();
+        JsxPng = new File(scriptPath + "/icons/jsx/ThumbNail/ThumbNail.png");
+        JsxFile = new File(scriptPath + "/icons/1.txt");
+        copyFile(JsxPng, new File(newFolder1 + "/" + btnName.text + ".png"));
+        copyFile(JsxFile, new File(newFolder1 + "/" + btnName.text + ".jsx"));
+        copyFile(JsxFile, new File(newFolder1 + "/!.txt"));
+        writeFile(new File(newFolder1 + "/" + btnName.text + ".jsx"), win.btnPanel.warnBtn.text);
+        writeFile(new File(newFolder1 + "/!.txt"), commentText.text);
+        win.close();
+        return btnName.text + "||" + commentText.text;
+    };
+    win.btnPanel.expBtn.onClick = function() {
+        if (btnName.text == "Name") {
+            alert("Choose a name for your code...");
+            return;
+        }
+        presetFolder = new Folder(pkgFolder + "");
+        aa = presetFolder.fsName;
+        newFolder1 = aa + "/SaveObjects_Assets/" + filePath[0] + "/" + btnName.text;
+        new Folder(newFolder1).create();
+        JsxPng = new File(scriptPath + "/icons/exp.png");
+        JsxFile = new File(scriptPath + "/icons/1.txt");
+        copyFile(JsxPng, new File(newFolder1 + "/" + btnName.text + ".png"));
+        copyFile(JsxFile, new File(newFolder1 + "/" + btnName.text + ".exp"));
+        copyFile(JsxFile, new File(newFolder1 + "/!.txt"));
+        writeFile(new File(newFolder1 + "/" + btnName.text + ".exp"), win.btnPanel.warnBtn.text);
+        writeFile(new File(newFolder1 + "/!.txt"), commentText.text);
+        win.close();
+        return btnName.text + "||" + commentText.text;
+    };
+    win.center();
+    win.show();
+    return btnName.text + "||" + commentText.text;
+}
+
+function writeFile(fileObj, fileContent, encoding) {
+    encoding = encoding || "utf-8";
+    fileObj = fileObj instanceof File ? fileObj : new File(fileObj);
+    var parentFolder = fileObj.parent;
+    if (!parentFolder.exists && !parentFolder.create()) {
+        throw new Error("Cannot create file in path " + fileObj.fsName)
+    }
+    fileObj.encoding = encoding;
+    fileObj.open("w");
+    fileObj.write(fileContent);
+    fileObj.close();
+    return fileObj;
+}
+
+function deselectLayers() {
+    mainComp = app.project.activeItem;
+    for (var i = 1; i <= mainComp.numLayers; i += 1) {
+        mainComp.layer(i).selected = false
+    }
+}
+
+function checkObj() {
+    try {
+        mainComp = app.project.activeItem;
+        foundObj = "";
+    } catch (e) {
+
+    }
+    try {
+        if (mainComp.selectedProperties.length >= 1) {
+            if (mainComp.selectedProperties[0].isMask) {
+                foundObj += "||masks"
+            }
+        }
+    } catch (e) {
+
+    }
+    try {
+        if (mainComp.selectedLayers[0].property("ADBE Mask Parade").numProperties >= 1) {
+            foundObj += "||masks"
+        }
+    } catch (e) {
+
+    }
+    try {
+        var prop = app.project.activeItem.selectedProperties[app.project.activeItem.selectedProperties.length - 1];
+        if (prop.selectedKeys.length >= 1) {
+            foundObj += "||speed"
+        }
+    } catch (e) {
+
+    }
+    try {
+        if (mainComp.selectedLayers[0].property("Marker").numKeys >= 1) {
+            foundObj += "||marker"
+        }
+    } catch (e) {
+
+    }
+    try {
+        var selectedProperties = app.project.activeItem.selectedLayers[0].selectedProperties;
+    } catch (e) {
+
+    }
+    try {
+        if (app.project.activeItem.selectedLayers[0].matchName == "ADBE Text Layer") {
+            foundObj += "||font"
+        }
+    } catch (e) {
+
+    }
+    try {
+        if (selectedProperties.length >= 1) {
+            foundObj += "||preset"
+        }
+    } catch (e) {
+
+    }
+    try {
+        if (prop.expressionEnabled) {
+            foundObj += "||expression"
+        }
+    } catch (e) {
+
+    }
+    return foundObj;
+}
+
+function newFont(filePath1) {
+    app.activeViewer.setActive();
+    mainComp = app.project.activeItem;
+    if (mainComp.selectedLayers.length == 0) {
+        return "error";
+    }
+    scriptPath = filePath1.split("||")[0];
+    filePath = filePath1.split("||")[1];
+    obj = filePath1.split("||")[2];
+    packageFolder = new Folder(pkgFolder + "/SaveObjects_Assets/" + filePath);
+    presetFolder = new Folder(pkgFolder + "");
+    aa = presetFolder.fsName;
+    selectedLayer = app.project.activeItem.selectedLayers[0];
+    var solid_solid_properties = {
+        name: "Magenta Solid 1",
+        typeName: "Footage",
+        comment: "",
+        label: 1,
+        height: 1080,
+        width: 1920,
+        mainSource: {
+            color: [0.86352902650833, 0, 0.80460602045059]
+        }
+    };
+    selectedLayer = app.project.activeItem.selectedLayers[0];
+    if (obj == "masks") {
+        var maskName = prompt("Please enter the name for saving Masks", "Name");
+        if (maskName != null) {
+            newFolder1 = aa + "/SaveObjects_Assets/" + filePath + "/" + maskName;
+            packageFolder = new Folder(pkgFolder + "/SaveObjects_Assets/" + filePath + "/" + maskName);
+            if (packageFolder.exists == true) {
+                alert("This name has already been used.\nPlease save with another name.");
+                return "error";
+            }
+            new Folder(newFolder1).create();
+            saveMask(app.project.activeItem.selectedLayers[0], maskName, aa + "/SaveObjects_Assets/" + filePath + "/" + maskName);
+            copyFile(new File(scriptPath + "/icons/mask.png"), new File(pkgFolder + "/SaveObjects_Assets/" + filePath + "/" + maskName + "/" + maskName + ".png"));
+            return maskName;
+        }
+
+        function saveMask(layer, presetName, location) {
+            var startString = "var shape = {\r";
+            var nameString = "\tname: \"" + presetName + "\",\r";
+            var durationString = "\tduration: " + layer.outPoint + ",\r";
+            var numMasksString = "\tnumMasks: " + layer.property("ADBE Mask Parade").numProperties + ",\r";
+            var maskColoursString = "\tmaskColours: [";
+            var maskModesString = "\tmaskModes: [";
+            var pathStaticVerticesString = "\tpathStaticVertices: [";
+            var pathStaticInTangentsString = "\tpathStaticInTangents: [";
+            var pathStaticOutTangentsString = "\tpathStaticOutTangents: [";
+            var featherStaticValuesString = "\tfeatherStaticValues: [";
+            var opacityStaticValuesString = "\topacityStaticValues: [";
+            var expansionStaticValuesString = "\texpansionStaticValues: [";
+            var numPathKeysString = "\tnumPathKeys: [";
+            var numFeatherKeysString = "\tnumFeatherKeys: [";
+            var numOpacityKeysString = "\tnumOpacityKeys: [";
+            var numExpansionKeysString = "\tnumExpansionKeys: [";
+            var pathVerticesKeyedValuesString = "\tpathVerticesKeyedValues: [";
+            var pathVerticesKeyedTimesString = "\tpathVerticesKeyedTimes: [";
+            var pathInTangentsKeyedValuesString = "\tpathInTangentsKeyedValues: [";
+            var pathInTangentsKeyedTimesString = "\tpathInTangentsKeyedTimes: [";
+            var pathOutTangentsKeyedValuesString = "\tpathOutTangentsKeyedValues: [";
+            var pathOutTangentsKeyedTimesString = "\tpathOutTangentsKeyedTimes: [";
+            var featherKeyedValuesString = "\tfeatherKeyedValues: [";
+            var featherKeyedTimesString = "\tfeatherKeyedTimes: [";
+            var opacityKeyedValuesString = "\topacityKeyedValues: [";
+            var opacityKeyedTimesString = "\topacityKeyedTimes: [";
+            var expansionKeyedValuesString = "\texpansionKeyedValues: [";
+            var expansionKeyedTimesString = "\texpansionKeyedTimes: [";
+            var endString = "\r}";
+            var ratioString = "\r\tScale=1;\r";
+            var scriptCodeString = "\r\rapp.beginUndoGroup(\"Import\");\rvar comp;\rif(app.project.activeItem != null && app.project.activeItem instanceof CompItem) {\r\tcomp = app.project.activeItem;\r} else {\r\tcomp = app.project.items.addComp(shape.name, 3840, 2160, 1, shape.duration, 30);\r\tcomp.openInViewer();\r}\r\rvar elementLayer = app.project.activeItem.selectedLayers[0];\r\rvar maskProperty = elementLayer.property(\"ADBE Mask Parade\");\rvar thisMask;\rvar tempShape = new Shape();\r\rfor(var i = 1; i <= shape.numMasks; i++) {\r\tthisMask = maskProperty.addProperty(\"ADBE Mask Atom\");\r\tthisMask.name = \"Mask \" + i.toString();\r\tthisMask.color = shape.maskColours[i-1];\r\tgetMaskMode(thisMask, shape.maskModes[i-1]);\r\r\t// setting shape settings\r\ttempShape.vertices = shape.pathStaticVertices[i-1];\r\ttempShape.inTangents = shape.pathStaticInTangents[i-1];\r\ttempShape.outTangents = shape.pathStaticOutTangents[i-1];\r\tthisMask.property(1).setValue(tempShape);\r\r\t// setting other props\r\tthisMask.property(2).setValue([shape.featherStaticValues[i-1], shape.featherStaticValues[i-1]]);\r\tthisMask.property(3).setValue(shape.opacityStaticValues[i-1]);\r\tthisMask.property(4).setValue(shape.expansionStaticValues[i-1]);\r\r\t// keyframe time\r\t// keyframe paths\r\tif(shape.numPathKeys[i-1] > 0) {\r            for(var k = 0; k < shape.numPathKeys[i-1]; k++) {\r                tempShape.vertices = shape.pathVerticesKeyedValues[i-1][k];\r                tempShape.inTangents = shape.pathInTangentsKeyedValues[i-1][k];\r                tempShape.outTangents = shape.pathOutTangentsKeyedValues[i-1][k];\r                thisMask.property(1).setValueAtTime(shape.pathVerticesKeyedTimes[i-1][k], tempShape);\r                }\r\t}\r\r\t// keyframe feather\r\tif(shape.numFeatherKeys[i-1] > 0) {\r\t\t\tthisMask.property(2).setValuesAtTimes(shape.featherKeyedTimes[i-1], shape.featherKeyedValues[i-1]);\r\t\t}\r\r\t// keyframe opacity\r\tif(shape.numOpacityKeys[i-1] > 0) {\r\t\t\tthisMask.property(3).setValuesAtTimes(shape.opacityKeyedTimes[i-1], shape.opacityKeyedValues[i-1]);\r\t}\r\r\t// keyframe expansions\r\tif(shape.numExpansionKeys[i-1] > 0) {\r\t\t\tthisMask.property(4).setValuesAtTimes(shape.expansionKeyedTimes[i-1], shape.expansionKeyedValues[i-1]);\r\t}\rfor(var m = 1; m <= thisMask.numProperties; m++) {\rfor(var e = 1; e <= thisMask.property(m).numKeys; e++) {\rthisMask.property(m).setInterpolationTypeAtKey(e, KeyframeInterpolationType.HOLD, KeyframeInterpolationType.HOLD);\r}\r}\r}\r\rapp.endUndoGroup();\r\rfunction getMaskMode(property, num) {\t\rswitch(num) {\t\rcase 6812:\t\rproperty.maskMode = MaskMode.NONE;\t\rbreak;\t\rcase 6813:\t\rproperty.maskMode = MaskMode.ADD;\t\rbreak;\t\rcase 6814:\t\rproperty.maskMode = MaskMode.SUBTRACT;\t\rbreak;\t\rcase 6815:\t\rproperty.maskMode = MaskMode.INTERSECT;\t\rbreak;\t\rcase 6816:\t\rproperty.maskMode = MaskMode.LIGHTEN;\t\rbreak;\t\rcase 6817:\t\rproperty.maskMode = MaskMode.DARKEN;\t\rbreak;\t\rcase 6818:\t\rproperty.maskMode = MaskMode.DIFFERENCE;\t\rbreak;\r}\r}";
+            for (var i = 1; i <= layer.property("ADBE Mask Parade").numProperties; i += 1) {
+                if (i != layer.property("ADBE Mask Parade").numProperties) {
+                    maskColoursString += JSON.stringify(layer.property("ADBE Mask Parade").property(i).color) + ",";
+                    maskModesString += layer.property("ADBE Mask Parade").property(i).maskMode + ",";
+                    thisShape = layer.property("ADBE Mask Parade").property(i).property(1).value;
+                    pathStaticVerticesString += JSON.stringify(thisShape.vertices) + ",";
+                    pathStaticInTangentsString += JSON.stringify(thisShape.inTangents) + ",";
+                    pathStaticOutTangentsString += JSON.stringify(thisShape.outTangents) + ",";
+                    featherStaticValuesString += layer.property("ADBE Mask Parade").property(i).property(2).value[0].toString() + ",";
+                    opacityStaticValuesString += layer.property("ADBE Mask Parade").property(i).property(3).value + ",";
+                    expansionStaticValuesString += layer.property("ADBE Mask Parade").property(i).property(4).value + ",";
+                    if (layer.property("ADBE Mask Parade").property(i).property(1).numKeys > 0) {
+                        numPathKeysString += layer.property("ADBE Mask Parade").property(i).property(1).numKeys + ",";
+                        pathVerticesKeyedValuesString += getTheseVerticesValues(layer.property("ADBE Mask Parade").property(i).property(1)) + ",";
+                        pathVerticesKeyedTimesString += getTheseVerticesTimes(layer.property("ADBE Mask Parade").property(i).property(1)) + ",";
+                        pathInTangentsKeyedValuesString += getTheseInTangentsValues(layer.property("ADBE Mask Parade").property(i).property(1)) + ",";
+                        pathInTangentsKeyedTimesString += getTheseInTangentsTimes(layer.property("ADBE Mask Parade").property(i).property(1)) + ",";
+                        pathOutTangentsKeyedValuesString += getTheseOutTangentsValues(layer.property("ADBE Mask Parade").property(i).property(1)) + ",";
+                        pathOutTangentsKeyedTimesString += getTheseOutTangentsTimes(layer.property("ADBE Mask Parade").property(i).property(1)) + ",";
+                    } else {
+                        numPathKeysString += "0,";
+                        pathVerticesKeyedValuesString += "[null],";
+                        pathVerticesKeyedTimesString += "[null],";
+                        pathInTangentsKeyedValuesString += "[null],";
+                        pathInTangentsKeyedTimesString += "[null],";
+                        pathOutTangentsKeyedValuesString += "[null],";
+                        pathOutTangentsKeyedTimesString += "[null],";
+                    }
+                    if (layer.property("ADBE Mask Parade").property(i).property(2).numKeys > 0) {
+                        numFeatherKeysString += layer.property("ADBE Mask Parade").property(i).property(2).numKeys + ",";
+                        featherKeyedValuesString += getTheseKeyValues(layer.property("ADBE Mask Parade").property(i).property(2)) + ",";
+                        featherKeyedTimesString += getTheseKeyTimes(layer.property("ADBE Mask Parade").property(i).property(2)) + ",";
+                    } else {
+                        numFeatherKeysString += "0,";
+                        featherKeyedValuesString += "[null],";
+                        featherKeyedTimesString += "[null],";
+                    }
+                    if (layer.property("ADBE Mask Parade").property(i).property(3).numKeys > 0) {
+                        numOpacityKeysString += layer.property("ADBE Mask Parade").property(i).property(3).numKeys + ",";
+                        opacityKeyedValuesString += getTheseKeyValues(layer.property("ADBE Mask Parade").property(i).property(3)) + ",";
+                        opacityKeyedTimesString += getTheseKeyTimes(layer.property("ADBE Mask Parade").property(i).property(3)) + ",";
+                    } else {
+                        numOpacityKeysString += "0,";
+                        opacityKeyedValuesString + "[null],";
+                        opacityKeyedTimesString += "[null],";
+                    }
+                    if (layer.property("ADBE Mask Parade").property(i).property(4).numKeys > 0) {
+                        numExpansionKeysString += layer.property("ADBE Mask Parade").property(i).property(4).numKeys + ",";
+                        expansionKeyedValuesString += getTheseKeyValues(layer.property("ADBE Mask Parade").property(i).property(4)) + ",";
+                        expansionKeyedTimesString += getTheseKeyTimes(layer.property("ADBE Mask Parade").property(i).property(4)) + ",";
+                    } else {
+                        numExpansionKeysString += "0,";
+                        expansionKeyedValuesString += "[null],";
+                        expansionKeyedTimesString += "[null],";
+                    }
+                } else {
+                    maskColoursString += JSON.stringify(layer.property("ADBE Mask Parade").property(i).color);
+                    maskModesString += layer.property("ADBE Mask Parade").property(i).maskMode;
+                    thisShape = layer.property("ADBE Mask Parade").property(i).property(1).value;
+                    pathStaticVerticesString += JSON.stringify(thisShape.vertices);
+                    pathStaticInTangentsString += JSON.stringify(thisShape.inTangents);
+                    pathStaticOutTangentsString += JSON.stringify(thisShape.outTangents);
+                    featherStaticValuesString += layer.property("ADBE Mask Parade").property(i).property(2).value[0].toString();
+                    opacityStaticValuesString += layer.property("ADBE Mask Parade").property(i).property(3).value;
+                    expansionStaticValuesString += layer.property("ADBE Mask Parade").property(i).property(4).value;
+                    if (layer.property("ADBE Mask Parade").property(i).property(1).numKeys > 0) {
+                        numPathKeysString += layer.property("ADBE Mask Parade").property(i).property(1).numKeys;
+                        pathVerticesKeyedValuesString += getTheseVerticesValues(layer.property("ADBE Mask Parade").property(i).property(1));
+                        pathVerticesKeyedTimesString += getTheseVerticesTimes(layer.property("ADBE Mask Parade").property(i).property(1));
+                        pathInTangentsKeyedValuesString += getTheseInTangentsValues(layer.property("ADBE Mask Parade").property(i).property(1));
+                        pathInTangentsKeyedTimesString += getTheseInTangentsTimes(layer.property("ADBE Mask Parade").property(i).property(1));
+                        pathOutTangentsKeyedValuesString += getTheseOutTangentsValues(layer.property("ADBE Mask Parade").property(i).property(1));
+                        pathOutTangentsKeyedTimesString += getTheseOutTangentsTimes(layer.property("ADBE Mask Parade").property(i).property(1));
+                    } else {
+                        numPathKeysString += "0";
+                        pathVerticesKeyedValuesString += "[null]";
+                        pathVerticesKeyedTimesString += "[null]";
+                        pathInTangentsKeyedValuesString += "[null]";
+                        pathInTangentsKeyedTimesString += "[null]";
+                        pathOutTangentsKeyedValuesString += "[null]";
+                        pathOutTangentsKeyedTimesString += "[null]";
+                    }
+                    if (layer.property("ADBE Mask Parade").property(i).property(2).numKeys > 0) {
+                        numFeatherKeysString += layer.property("ADBE Mask Parade").property(i).property(2).numKeys;
+                        featherKeyedValuesString += getTheseKeyValues(layer.property("ADBE Mask Parade").property(i).property(2));
+                        featherKeyedTimesString += getTheseKeyTimes(layer.property("ADBE Mask Parade").property(i).property(2));
+                    } else {
+                        numFeatherKeysString += "0";
+                        featherKeyedValuesString += "[null]";
+                        featherKeyedTimesString += "[null]";
+                    }
+                    if (layer.property("ADBE Mask Parade").property(i).property(3).numKeys > 0) {
+                        numOpacityKeysString += layer.property("ADBE Mask Parade").property(i).property(3).numKeys;
+                        opacityKeyedValuesString += getTheseKeyValues(layer.property("ADBE Mask Parade").property(i).property(3));
+                        opacityKeyedTimesString += getTheseKeyTimes(layer.property("ADBE Mask Parade").property(i).property(3));
+                    } else {
+                        numOpacityKeysString += "0";
+                        opacityKeyedValuesString + "[null]";
+                        opacityKeyedTimesString += "[null]";
+                    }
+                    if (layer.property("ADBE Mask Parade").property(i).property(4).numKeys > 0) {
+                        numExpansionKeysString += layer.property("ADBE Mask Parade").property(i).property(4).numKeys;
+                        expansionKeyedValuesString += getTheseKeyValues(layer.property("ADBE Mask Parade").property(i).property(4));
+                        expansionKeyedTimesString += getTheseKeyTimes(layer.property("ADBE Mask Parade").property(i).property(4));
+                    } else {
+                        numExpansionKeysString += "0";
+                        expansionKeyedValuesString += "[null]";
+                        expansionKeyedTimesString += "[null]";
+                    }
+                }
+            }
+            maskColoursString += "],\r";
+            maskModesString += "],\r";
+            pathStaticVerticesString += "],\r";
+            pathStaticInTangentsString += "],\r";
+            pathStaticOutTangentsString += "],\r";
+            featherStaticValuesString += "],\r";
+            opacityStaticValuesString += "],\r";
+            expansionStaticValuesString += "],\r";
+            numPathKeysString += "],\r";
+            numFeatherKeysString += "],\r";
+            numOpacityKeysString += "],\r";
+            numExpansionKeysString += "],\r";
+            pathVerticesKeyedValuesString += "],\r";
+            pathVerticesKeyedTimesString += "],\r";
+            pathInTangentsKeyedValuesString += "],\r";
+            pathInTangentsKeyedTimesString += "],\r";
+            pathOutTangentsKeyedValuesString += "],\r";
+            pathOutTangentsKeyedTimesString += "],\r";
+            featherKeyedValuesString += "],\r";
+            featherKeyedTimesString += "],\r";
+            opacityKeyedValuesString += "],\r";
+            opacityKeyedTimesString += "],\r";
+            expansionKeyedValuesString += "],\r";
+            expansionKeyedTimesString += "]";
+            var totalString = startString + nameString + durationString + numMasksString + maskColoursString + maskModesString + pathStaticVerticesString + pathStaticInTangentsString + pathStaticOutTangentsString + featherStaticValuesString + opacityStaticValuesString + expansionStaticValuesString + numPathKeysString + numFeatherKeysString + numOpacityKeysString + numExpansionKeysString + pathVerticesKeyedValuesString + pathVerticesKeyedTimesString + pathInTangentsKeyedValuesString + pathInTangentsKeyedTimesString + pathOutTangentsKeyedValuesString + pathOutTangentsKeyedTimesString + featherKeyedValuesString + featherKeyedTimesString + opacityKeyedValuesString + opacityKeyedTimesString + expansionKeyedValuesString + expansionKeyedTimesString + endString + ratioString;
+            var file = File(location + "/" + presetName + ".msk");
+            file.open("w");
+            file.write(totalString);
+            file.close();
+        }
+
+        function getTheseVerticesValues(property) {
+            var array = [];
+            for (var a = 1; a <= property.numKeys; a += 1) {
+                array.push(property.keyValue(a).vertices);
+            }
+            return JSON.stringify(array);
+        }
+
+        function getTheseVerticesTimes(property) {
+            var array = [];
+            for (var a = 1; a <= property.numKeys; a += 1) {
+                array.push(property.keyTime(a));
+            }
+            return JSON.stringify(array);
+        }
+
+        function getTheseInTangentsValues(property) {
+            var array = [];
+            for (var a = 1; a <= property.numKeys; a += 1) {
+                array.push(property.keyValue(a).inTangents);
+            }
+            return JSON.stringify(array);
+        }
+
+        function getTheseInTangentsTimes(property) {
+            var array = [];
+            for (var a = 1; a <= property.numKeys; a += 1) {
+                array.push(property.keyTime(a));
+            }
+            return JSON.stringify(array);
+        }
+
+        function getTheseOutTangentsValues(property) {
+            var array = [];
+            for (var a = 1; a <= property.numKeys; a += 1) {
+                array.push(property.keyValue(a).outTangents);
+            }
+            return JSON.stringify(array);
+        }
+
+        function getTheseOutTangentsTimes(property) {
+            var array = [];
+            for (var a = 1; a <= property.numKeys; a += 1) {
+                array.push(property.keyTime(a));
+            }
+            return JSON.stringify(array);
+        }
+
+        function getTheseKeyValues(property) {
+            var array = [];
+            for (var a = 1; a <= property.numKeys; a += 1) {
+                array.push(property.keyValue(a));
+            }
+            return JSON.stringify(array);
+        }
+
+        function getTheseKeyTimes(property) {
+            var array = [];
+            for (var a = 1; a <= property.numKeys; a += 1) {
+                array.push(property.keyTime(a));
+            }
+            return JSON.stringify(array);
+        }
+    }
+    try {
+        var prop = app.project.activeItem.selectedProperties[app.project.activeItem.selectedProperties.length - 1];
+        prop1D = "6417";
+        prop2D = "6413";
+        prop3D = "6414";
+        prop2D1 = "6416";
+        prop1D1 = "6415";
+        mainProp = app.project.activeItem.selectedProperties[app.project.activeItem.selectedProperties.length - 1];
+        var dType = "1D";
+        if (mainProp.propertyValueType == prop2D || mainProp.propertyValueType == prop2D1) {
+            dType = "2D"
+        }
+        if (mainProp.propertyValueType == prop3D) {
+            dType = "3D"
+        }
+        numKeys = mainProp.selectedKeys.length;
+        if (obj == "speed") {
+            var saveName = prompt("Please enter the name for saving interpolation.\nProperty:" + mainProp.name, "Name");
+            if (saveName != null) {
+                newFolder1 = aa + "/SaveObjects_Assets/" + filePath + "/" + saveName;
+                packageFolder = new Folder(pkgFolder + "/SaveObjects_Assets/" + filePath + "/" + saveName);
+                if (packageFolder.exists == true) {
+                    alert("This name has already been used.\nPlease save with another name.");
+                    return "error";
+                }
+                new Folder(newFolder1).create();
+                keyInTemporalEase0 = "";
+                easeInSpeedArray0 = "";
+                keyOutTemporalEase0 = "";
+                easeInSpeed0 = "";
+                easeOutSpeed0 = "";
+                keyInSpatialTangent0 = "";
+                keyOutSpatialTangent0 = "";
+                keyInTemporalEase1 = "";
+                easeInSpeedArray1 = "";
+                keyOutTemporalEase1 = "";
+                easeInSpeed1 = "";
+                easeOutSpeed1 = "";
+                keyInSpatialTangent1 = "";
+                keyOutSpatialTangent1 = "";
+                keyInTemporalEase2 = "";
+                easeInSpeedArray2 = "";
+                keyOutTemporalEase2 = "";
+                easeInSpeed2 = "";
+                easeOutSpeed2 = "";
+                keyInSpatialTangent2 = "";
+                keyOutSpatialTangent2 = "";
+                for (var i = 1; i <= prop.selectedKeys.length; i += 1) {
+                    if (i <= (prop.selectedKeys.length - 1)) {
+                        camma = ","
+                    } else {
+                        camma = ","
+                    }
+                    try {
+                        keyInTemporalEase2 += prop.keyInTemporalEase(i)[2].influence + camma;
+                        keyOutTemporalEase2 += prop.keyOutTemporalEase(i)[2].influence + camma;
+                        easeInSpeed2 += prop.keyInTemporalEase(i)[2].speed + camma;
+                        easeOutSpeed2 += prop.keyOutTemporalEase(i)[2].speed + camma;
+                    } catch (e) {
+                        keyInTemporalEase2 += prop.keyInTemporalEase(i)[0].influence + camma;
+                        keyOutTemporalEase2 += prop.keyOutTemporalEase(i)[0].influence + camma;
+                        easeInSpeed2 += prop.keyInTemporalEase(i)[0].speed + camma;
+                        easeOutSpeed2 += prop.keyOutTemporalEase(i)[0].speed + camma;
+                    }
+                    try {
+                        keyInTemporalEase1 += prop.keyInTemporalEase(i)[1].influence + camma;
+                        keyOutTemporalEase1 += prop.keyOutTemporalEase(i)[1].influence + camma;
+                        easeInSpeed1 += prop.keyInTemporalEase(i)[1].speed + camma;
+                        easeOutSpeed1 += prop.keyOutTemporalEase(i)[1].speed + camma;
+                    } catch (e) {
+                        keyInTemporalEase1 += prop.keyInTemporalEase(i)[0].influence + camma;
+                        keyOutTemporalEase1 += prop.keyOutTemporalEase(i)[0].influence + camma;
+                        easeInSpeed1 += prop.keyInTemporalEase(i)[0].speed + camma;
+                        easeOutSpeed1 += prop.keyOutTemporalEase(i)[0].speed + camma;
+                    }
+                    keyInTemporalEase0 += prop.keyInTemporalEase(i)[0].influence + camma;
+                    keyOutTemporalEase0 += prop.keyOutTemporalEase(i)[0].influence + camma;
+                    easeInSpeed0 += prop.keyInTemporalEase(i)[0].speed + camma;
+                    easeOutSpeed0 += prop.keyOutTemporalEase(i)[0].speed + camma;
+                }
+                t1 = prop.keyTime(prop.selectedKeys[0]);
+                t2 = prop.keyTime(prop.selectedKeys[prop.selectedKeys.length - 1]);
+                var tmpComp = app.project.items.addComp("temp", 200, 108, 1, 1, 1 / mainComp.frameDuration);
+                tmpComp.duration = mainComp.duration;
+                mainCompTime = mainComp.time;
+                $.evalFile(new File(scriptPath + "/jsx/graph.jsx"));
+                solid = tmpComp.layer(2);
+                solid.inPoint = t1;
+                solid.outPoint = t2 + 0.3;
+                for (var n = 1; n <= 4; n += 1) {
+                    solidBrushPosition = solid.property("ADBE Effect Parade").property(n).property("ADBE Write-on-0001");
+                    solidBrushPosition_keyTimesArray = [t1, t2];
+                    solidBrushPosition_valuesArray = [
+                        [0, 540],
+                        [1920, 540]
+                    ];
+                    solidBrushPosition.setValuesAtTimes(solidBrushPosition_keyTimesArray, solidBrushPosition_valuesArray);
+                }
+                parentPath = getPropPath(selectedLayer, prop);
+
+                function getPropPath(selectedLayer, prop) {
+                    compName = app.project.activeItem.name;
+                    var layerRoot = false;
+                    var propPath = "";
+                    while (prop.parentProperty) {
+                        var dot = ".";
+                        propName = prop.name;
+                        if (prop.canSetEnabled) {
+                            propPath = "('" + propName + "')." + propPath
+                        } else {
+                            try {
+                                if (prop.numProperties >= 1 && prop.name.slice(prop.name.length - 1, prop.name.length) == "s") {
+                                    propName = prop.name.slice(0, -1);
+                                    dot = "";
+                                }
+                                propName = propName.slice(0, 1).toLowerCase() + propName.slice(1, 1000).toLowerCase();
+                                if (propName.split(" ").length == 2) {
+                                    propName = propName.split(" ")[0] + propName.split(" ")[1].slice(0, 1).toUpperCase() + propName.split(" ")[1].slice(1, 1000).toLowerCase()
+                                }
+                                if (propName.split(" ").length == 3) {
+                                    propName = propName.split(" ")[0] + propName.split(" ")[1].slice(0, 1).toUpperCase() + propName.split(" ")[1].slice(1, 1000).toLowerCase() + propName.split(" ")[2].slice(0, 1).toUpperCase() + propName.split(" ")[2].slice(1, 1000).toLowerCase()
+                                }
+                                propPath = propName + dot + propPath;
+                            } catch (e) {
+                                propName = prop.name;
+                                propPath = propName.slice(0, 1).toLowerCase() + propName.slice(1, 1000).toLowerCase() + "." + propPath;
+                            }
+                        }
+                        prop = prop.parentProperty;
+                    }
+                    return "comp('" + compName + "').layer('" + selectedLayer.name + "')." + propPath.slice(0, -1);
+                }
+                oldName = "opacity";
+                newName = "comp('Comp 1').layer(1).transform.scale";
+                fixExpressions(tmpComp, oldName, parentPath);
+
+                function fixExpressions(comp, oldName, newName) {
+                    for (var j = 1; j <= comp.numLayers; j += 1) {
+                        myLayer = comp.layer(j);
+                        replaceExpressions(myLayer, oldName, newName, 0);
+                    }
+                }
+
+                function replaceExpressions(rootObj, oldName, newName, nestingLevel) {
+                    var countProps = rootObj.numProperties;
+                    for (var propIndex = 1; propIndex <= countProps; propIndex += 1) {
+                        var prop = rootObj.property(propIndex);
+                        try {
+                            prop.expression = prop.expression.replace(/comp\('tmpComp'\).layer\(1\).transform.scale/g, newName);
+                        } catch (e) {
+
+                        }
+                        if (prop.numProperties > 0) {
+                            replaceExpressions(prop, oldName, newName, nestingLevel + 1)
+                        }
+                    }
+                }
+
+                function applySpatialTangents(property, keyTimesArray, inSpatialTangentsArray, outSpatialTangentsArray) {
+                    for (var sp = 0; sp < keyTimesArray.length; sp++) {
+                        property.setSpatialTangentsAtKey(sp + 1, inSpatialTangentsArray[sp], outSpatialTangentsArray[sp]);
+                    }
+                }
+                tempId = tmpComp.id;
+                app.executeCommand(2004);
+                app.project.itemByID(tempId).selected = true;
+                app.project.itemByID(tempId).openInViewer();
+                replaceExpressions1(tmpComp.layer(2), 3);
+
+                function replaceExpressions1(rootObj, nestingLevel) {
+                    var countProps = rootObj.numProperties;
+                    for (var propIndex = 1; propIndex <= countProps; propIndex += 1) {
+                        var prop1 = rootObj.property(propIndex);
+                        try {
+                            if (prop1.expressionEnabled) {
+                                app.executeCommand(2004);
+                                prop1.selected = true;
+                                app.executeCommand(2639);
+                                prop1.selected = false;
+                                prop1.expression = "";
+                            }
+                        } catch (e) {
+
+                        }
+                        if (prop1.numProperties > 0) {
+                            replaceExpressions1(prop1, nestingLevel + 1)
+                        }
+                    }
+                }
+                maxVlc = tmpComp.layer(2).property("ADBE Effect Parade").property(5).property(1).value;
+                maxSpd = tmpComp.layer(2).property("ADBE Effect Parade").property(6).property(1).value;
+                minVlc = tmpComp.layer(2).property("ADBE Effect Parade").property(7).property(1).value;
+                minSpd = tmpComp.layer(2).property("ADBE Effect Parade").property(8).property(1).value;
+                var lang = app.isoLanguage;
+                if (lang != "en_US" || maxVlc == 0 && maxSpd == 0 && minVlc == 0 && minSpd == 0) {
+                    copyFile(new File(scriptPath + "/icons/graph.png"), new File(pkgFolder + "/SaveObjects_Assets/" + filePath + "/" + saveName + "/" + saveName + ".png"))
+                } else {
+                    tmpComp.saveFrameToPng(t2 + 0.1, File(pkgFolder + "/SaveObjects_Assets/" + filePath + "/" + saveName + "/" + saveName + ".png"))
+                }
+                mainProp.selected = true;
+                tmpComp.remove();
+                var txtFile = new File(pkgFolder + "/SaveObjects_Assets/" + filePath + "/" + saveName + "/" + saveName + ".spd");
+                var titleFile = new File(pkgFolder + "/SaveObjects_Assets/" + filePath + "/" + saveName + "/!.txt");
+                var content = "easeInInfluArray0=" + keyInTemporalEase0.toString() + "\neaseOutInfluArray0=" + keyOutTemporalEase0.toString() + "\neaseInSpeed0=" + easeInSpeed0.toString() + "\neaseOutSpeed0=" + easeOutSpeed0.toString() + "\ninSpatialTangents0=" + keyInSpatialTangent0.toString() + "\noutSpatialTangents0=" + keyOutSpatialTangent0.toString() + "\neaseInInfluArray1=" + keyInTemporalEase1.toString() + "\neaseOutInfluArray1=" + keyOutTemporalEase1.toString() + "\neaseInSpeed1=" + easeInSpeed1.toString() + "\neaseOutSpeed1=" + easeOutSpeed1.toString() + "\ninSpatialTangents1=" + keyInSpatialTangent1.toString() + "\noutSpatialTangents1=" + keyOutSpatialTangent1.toString() + "\neaseInInfluArray2=" + keyInTemporalEase2.toString() + "\neaseOutInfluArray2=" + keyOutTemporalEase2.toString() + "\neaseInSpeed2=" + easeInSpeed2.toString() + "\neaseOutSpeed2=" + easeOutSpeed2.toString() + "\ninSpatialTangents2=" + keyInSpatialTangent2.toString() + "\noutSpatialTangents2=" + keyOutSpatialTangent2.toString() + ";";
+                var txtContent = "Property:" + mainProp.name + "\nType:" + dType + "\nKey Nums:" + prop.selectedKeys.length;
+                writeFile(txtFile, content);
+                writeFile(titleFile, txtContent);
+
+                function writeFile(fileObj, fileContent, encoding) {
+                    encoding = encoding || "utf-8";
+                    fileObj = fileObj instanceof File ? fileObj : new File(fileObj);
+                    var parentFolder = fileObj.parent;
+                    if (!parentFolder.exists && !parentFolder.create()) {
+                        throw new Error("Cannot create file in path " + fileObj.fsName)
+                    }
+                    fileObj.encoding = encoding;
+                    fileObj.open("w");
+                    fileObj.write(fileContent);
+                    fileObj.close();
+                    return fileObj;
+                }
+                return saveName;
+            }
+        }
+    } catch (e) {
+
+    }
+    if (obj == "markers") {
+        var marker = selectedLayer.property("ADBE Marker");
+        markersInfo = "";
+        for (var i = 1; i <= marker.numKeys; i += 1) {
+            markersInfo = markersInfo + "Name:" + marker.keyValue(i).comment + " Time:" + marker.keyTime(i) + " duration:" + marker.keyValue(i).duration + "\n";
+        }
+        markersInfo = markersInfo + "\n\nOffset Frames:0";
+        var saveName = prompt("Please enter the name for saving markers", "Name");
+        if (saveName != null) {
+            newFolder1 = aa + "/SaveObjects_Assets/" + filePath + "/" + saveName;
+            packageFolder = new Folder(pkgFolder + "/SaveObjects_Assets/" + filePath + "/" + saveName);
+            if (packageFolder.exists == true) {
+                alert("This name has already been used.\nPlease save with another name.");
+                return "error";
+            }
+            new Folder(newFolder1).create();
+            var txtFile = new File(newFolder1 + "/" + saveName + ".mrk");
+            var content = markersInfo;
+            writeFile(txtFile, content);
+            copyFile(new File(scriptPath + "/icons/marker.png"), new File(newFolder1 + "/" + saveName + ".png"));
+            return saveName;
+        }
+    }
+    var selectedProperties = app.project.activeItem.selectedLayers[0].selectedProperties;
+    if (selectedProperties.length == 0 && app.project.activeItem.selectedLayers[0].matchName !== "ADBE Text Layer") {
+        alert("Select a text layer to save the text font.\nOr Select a layer property to save the property.");
+        return "error";
+    }
+    if (obj == "expression") {
+        var saveName = prompt("Please enter the name for saving expression", "Name");
+        if (saveName != null) {
+            newFolder1 = aa + "/SaveObjects_Assets/" + filePath + "/" + saveName;
+            packageFolder = new Folder(pkgFolder + "/SaveObjects_Assets/" + filePath + "/" + saveName);
+            if (packageFolder.exists == true) {
+                alert("This name has already been used.\nPlease save with another name.");
+                return "error";
+            }
+            new Folder(newFolder1).create();
+            var txtFile = new File(newFolder1 + "/" + saveName + ".exp");
+            var content = selectedProperties[0].expression;
+            writeFile(txtFile, content);
+            copyFile(new File(scriptPath + "/icons/exp.png"), new File(newFolder1 + "/" + saveName + ".png"));
+            copyFile(new File(scriptPath + "/icons/1.txt"), new File(newFolder1 + "/!.txt"));
+            writeFile(new File(newFolder1 + "/!.txt"), content);
+            return saveName;
+        }
+    }
+    if (obj == "preset") {
+        selectedLayer = app.project.activeItem.selectedLayers[0];
+        copyFile(new File(scriptPath + "/icons/temp.ffx"), new File(pkgFolder + "/SaveObjects_Assets/" + filePath + "/temp.ffx"));
+        pfile = new File(pkgFolder + "/SaveObjects_Assets/" + filePath + "/temp.ffx");
+        selectedLayer.applyPreset(pfile);
+        $.sleep(1000);
+        app.executeCommand(16);
+        pfile.remove();
+        selectedLayer.selected = true;
+        app.activeViewer.setActive();
+        app.executeCommand(3075);
+        subFolder = new Folder(pkgFolder + "/SaveObjects_Assets/" + filePath + "/");
+        subFiles = subFolder.getFiles();
+        targrtFile1 = "noFile";
+        fileType = "noFile";
+        for (var f = 0; f < subFiles.length; f += 1) {
+            fileType = subFiles[f].name.slice(-3);
+            if (fileType == "ffx") {
+                targrtFile1 = subFiles[f];
+                break;
+            }
+        }
+        if (targrtFile1.name.slice(-3) == "ffx") {
+            copyFile(targrtFile1, new File(pkgFolder + "/SaveObjects_Assets/" + filePath + "/" + targrtFile1.name.split(".")[0] + "/" + targrtFile1.name));
+            copyFile(new File(scriptPath + "/icons/ffx.png"), new File(pkgFolder + "/SaveObjects_Assets/" + filePath + "/" + targrtFile1.name.split(".")[0] + "/" + targrtFile1.name.split(".")[0] + ".png"));
+            if (mainComp.workAreaDuration >= pTime) {
+                mainComp.workAreaDuration = pTime
+            }
+            if (preview == "Still") {
+                mainComp.workAreaStart = mainComp.time;
+                mainComp.workAreaDuration = (1 / mainComp.frameRate) * 2;
+            }
+            if (preview != "No") {
+                saveSequence(scriptPath, filePath + "/" + targrtFile1.name.split(".")[0])
+            }
+            targrtFile1.remove();
+            return targrtFile1.name.split(".")[0];
+        } else {
+            return "error";
+        }
+    }
+    myTextLayer = app.project.activeItem.selectedLayers[0];
+    if (myTextLayer instanceof TextLayer) {
+
+    } else {
+        return "error";
+    }
+    var mySourceText = myTextLayer.property("ADBE Text Properties").property("ADBE Text Document");
+    fontName = mySourceText.value.font;
+    tmpLayer = mainComp.layers.addText(mySourceText.value);
+    tmpLayer.property("ADBE Text Properties").property("ADBE Text Document").value.font = fontName;
+    newFolder1 = aa + "/SaveObjects_Assets/" + filePath + "/" + fontName;
+    collectFonts(newFolder1, "saveFont");
+    new Folder(newFolder1).create();
+    var tmpComp = app.project.items.addComp("temp", 200, 50, 1, 1, 24);
+    tmpComp.duration = mainComp.duration;
+    mainCompTime = mainComp.time;
+    tmpLayer.copyToComp(tmpComp);
+    newLayer = tmpComp.layer(1);
+    var s = parseInt(((tmpComp.width * tmpComp.pixelAspect) / newLayer.sourceRectAtTime(0, false).width) * 100);
+    centerAnchorPoint(tmpComp.layer(1));
+    newLayer.property("Scale").setValue([s, s]);
+    tmpComp.height = parseInt(newLayer.sourceRectAtTime(0, false).height);
+    tmpComp.height = parseInt(tmpComp.height * (s / 100));
+    if (tmpComp.height <= 60) {
+        tmpComp.height = 60
+    }
+    tmpComp.layer(1).property("ADBE Transform Group").position.setValue([parseInt(tmpComp.width / 2), parseInt(tmpComp.height / 2), 0]);
+    fillFx = tmpComp.layer(1).property("ADBE Effect Parade").addProperty("ADBE Fill");
+    fillFx.name = "WFill";
+    tmpComp.layer(1).property("ADBE Effect Parade").property("WFill").property("ADBE Fill-0002").setValue([1, 1, 1, 1]);
+    tmpComp.saveFrameToPng(mainComp.time, File(pkgFolder + "/SaveObjects_Assets/" + filePath + "/" + fontName + "/" + fontName + ".png"));
+    tmpComp.remove();
+    tmpLayer.remove();
+    myTextLayer.selected = true;
+    return fontName;
+}
+
+function centerAnchorPoint(layer) {
+    position1 = layer.property("ADBE Transform Group").position.value;
+    layer.property("ADBE Transform Group").position.expression = "";
+    layer.comment = "";
+    var targetParam = layer.property("ADBE Transform Group").position;
+    try {
+        while (targetParam.numKeys != 0) {
+            targetParam.removeKey(1);
+        }
+    } catch (e) {
+
+    }
+    try {
+        while (layer.property("ADBE Transform Group").scale.numKeys != 0) {
+            layer.property("ADBE Transform Group").scale.removeKey(1);
+        }
+    } catch (e) {
+
+    }
+    layer.property("ADBE Transform Group").position.setValue(position1);
+    targetLayer = app.project.activeItem.selectedLayers[app.project.activeItem.selectedLayers.length - 1];
+    targetX = targetLayer.position.value[0];
+    targetY = targetLayer.position.value[1];
+    var comp = layer.containingComp;
+    var curTime = comp.time;
+    var layerAnchor = layer.anchorPoint.value;
+    try {
+        x = (layer.sourceText.value.boxTextSize[0] / 2) + (targetX - layer.position.value[0]);
+        y = (layer.sourceText.value.boxTextSize[1] / 2) + (targetY - layer.position.value[1]);
+        x += layer.sourceText.value.boxTextPos[0];
+        y += layer.sourceText.value.boxTextPos[1];
+    } catch (e) {
+        x = (layer.sourceRectAtTime(curTime, false).width / 2) + (targetX - layer.position.value[0]);
+        y = (layer.sourceRectAtTime(curTime, false).height / 2) + (targetY - layer.position.value[1]);
+        x += layer.sourceRectAtTime(curTime, false).left;
+        y += layer.sourceRectAtTime(curTime, false).top;
+    }
+    var xAdd = (x - layerAnchor[0]) * (layer.scale.value[0] / 100);
+    var yAdd = (y - layerAnchor[1]) * (layer.scale.value[1] / 100);
+    layer.anchorPoint.setValue([x, y]);
+    var layerPosition = layer.position.value;
+    layer.position.setValue([layerPosition[0] + xAdd, layerPosition[1] + yAdd, layerPosition[2]]);
+}
+
+function newFile(filePath) {
+    scriptPath = filePath.split("||")[0];
+    var saveName = prompt("Please enter a name for your new saved object.\nIt will be saved in the current selected category.", "Name");
+    if (saveName == null) {
+        return "error||";
+    }
+    var specialChars = "<>@!#$%^&*()_+[]{}?:;|'\"\\,./~`-=";
+    var checkForSpecialChar = function(string) {
+        for (var i = 0; i < specialChars.length; i += 1) {
+            if (string.indexOf(specialChars[i]) > -1) {
+                return true;
+            }
+        }
+        return false;
+    };
+    if (checkForSpecialChar(saveName)) {
+        alert("This name is not valid. Please use valid characters.");
+        return "error||";
+    }
+    filePath = filePath.split("||")[1] + "/" + saveName;
+    $.sleep(1000);
+    app.activeViewer.setActive();
+    if (app.project.file == null) {
+        var r = false;
+        var dlg = new Window("dialog", "Save Objects:");
+        btnName = dlg.add("statictext", [10, 30, 300, 60], "Your project is not saved.\nDo you want to continue without saving your project?", {
+            multiline: true
+        });
+        lineGroup = dlg.add("group {alignChildren: \"left\",orientation: \"row\"}");
+        button = lineGroup.add("button", undefined, "Continue");
+        button1 = lineGroup.add("button", undefined, "Cansel");
+        button.onClick = function() {
+            dlg.close();
+            r = true;
+        };
+        button1.onClick = function() {
+            dlg.close();
+            r = false;
+        };
+        dlg.show();
+        if (r != true) {
+            return "cancel";
+        }
+    }
+    packageFolder = new Folder(pkgFolder + "/SaveObjects_Assets/" + filePath);
+    if (packageFolder.exists == true) {
+        alert("This name ('" + filePath.split("/")[1] + "') has already been used.\nPlease save with another name.");
+        return "cancel";
+    }
+    tmpWorkArea = app.project.activeItem.workAreaDuration;
+    if (app.project.activeItem.workAreaDuration > 5) {
+        app.project.activeItem.workAreaDuration = 5
+    }
+    if (app.project.activeItem == null) {
+        alert("Select a compostion and try again.");
+        return "noComp";
+    }
+    try {
+        nameComp = app.project.activeItem.name;
+    } catch (e) {
+        return "noComp";
+    }
+    mainComp = app.project.activeItem;
+    var idItem = mainComp.id;
+    presetFolder = new Folder(pkgFolder + "");
+    aa = presetFolder.fsName;
+    newFolder1 = aa + "/SaveObjects_Assets/" + filePath;
+    new Folder(newFolder1).create();
+    new Folder(aa + "/SaveObjects_Assets/" + filePath + "/Png").create();
+    if (app.project.activeItem.selectedLayers.length == 0) {
+        app.project.activeItem.comment = filePath
+    } else {
+        app.project.activeItem.comment = filePath + "*";
+        for (var k = mainComp.numLayers; k >= 1; k--) {
+            if (!contains(mainComp.selectedLayers, mainComp.layer(k))) {
+                if (mainComp.layer(k).locked) {
+                    mainComp.layer(k).locked = false
+                }
+                mainComp.layer(k).remove();
+            }
+        }
+    }
+    app.executeCommand(2997);
+    var originalFile = app.project.file;
+    app.project.reduceProject(app.project.activeItem);
+    if (mainComp.workAreaDuration >= pTime) {
+        mainComp.workAreaDuration = pTime
+    }
+    if (preview == "Still") {
+        mainComp.workAreaStart = mainComp.time;
+        mainComp.workAreaDuration = (1 / mainComp.frameRate) * 2;
+    }
+    if (preview != "No") {
+        saveSequence(scriptPath, filePath)
+    }
+    $.sleep(3000);
+    presetFolder = new Folder(pkgFolder + "/SaveObjects_Assets/" + filePath);
+    aa = presetFolder.fsName;
+    var newFile = new File([aa]);
+    collect(newFile, filePath.split("/")[1]);
+    if (saveFont == "true") {
+        collectFonts(aa, "collectFonts")
+    }
+    $.sleep(1500);
+    try {
+        app.open(originalFile);
+        openInViewer(idItem);
+        app.project.activeItem.workAreaDuration = tmpWorkArea;
+    } catch (e) {
+
+    }
+    return "ok||" + saveName;
+}
+
+function compIndex(compName) {
+    for (var i = 1; i <= app.project.items.length; i += 1) {
+        if (app.project.item(i).name == compName) {
+            return i;
+        }
+    }
+}
+
+function openInViewer(idItem) {
+    app.project.itemByID(idItem).selected = true;
+    app.project.itemByID(idItem).openInViewer();
+}
+
+function searchFolder(folder, compName) {
+    for (var i = 1; i <= folder.numItems; i += 1) {
+        if (folder.item(i).numItems > 0) {
+            searchFolder(folder.item(i), compName);
+        } else {
+            if (folder.item(i).comment.split("*")[0] == compName) {
+                searchedItem = folder.item(i);
+                return;
+            }
+            if (folder.item(i).name.toLowerCase().search(compName.toLowerCase()) != -1) {
+                searchedItem = folder.item(i);
+                return;
+            }
+        }
+    }
+    for (var i = 1; i <= folder.numItems; i += 1) {
+        if (folder.item(i).numItems > 0) {
+            searchFolder(folder.item(i), compName);
+        } else {
+            if (folder.item(i).usedIn == "" && folder.item(i) instanceof CompItem) {
+                searchedItem = folder.item(i);
+                return;
+            }
+        }
+    }
+}
+
+function applyComp(filePath) {
+    clickType = filePath.split("||")[1];
+    filePath = filePath.split("||")[0];
+    importedName = filePath.split("/")[1].toLowerCase();
+    try {
+        app.activeViewer.setActive();
+        mainComp = app.project.activeItem;
+        if (app.project.numItems > 0) {
+            mainComp.comment = mainComp.comment
+        }
+    } catch (e) {
+
+    }
+    var folderPath = new Folder([pkgFolder + "/SaveObjects_Assets/" + filePath]);
+    var files = folderPath.getFiles();
+    var targetFileType = "";
+    var fileType = "";
+    for (var i = 0; i < files.length; i += 1) {
+        fileType = files[i].name.split(".")[files[i].name.split(".").length - 1];
+        if (files[i].name == "Composition") {
+            targetFileType = "Composition";
+            targetFile = files[i];
+        }
+        if (fileType == "aep") {
+            targetFileType = "aeFile";
+            targetFile = files[i];
+            break;
+        }
+        if (fileType == "ffx") {
+            targetFileType = "ffx";
+            targetFile = files[i];
+            break;
+        }
+        if (fileType == "jsx" || fileType == "jsxbin") {
+            targetFileType = "jsx";
+            targetFile = files[i];
+            break;
+        }
+        if (fileType == "exp") {
+            targetFileType = "exp";
+            targetFile = files[i];
+            break;
+        }
+        if (fileType == "msk") {
+            targetFileType = "msk";
+            targetFile = files[i];
+            break;
+        }
+        if (fileType == "mrk") {
+            targetFileType = "mrk";
+            targetFile = files[i];
+            break;
+        }
+        if (fileType == "spd") {
+            targetFileType = "spd";
+            targetFile = files[i];
+            break;
+        }
+        if (fileType == "ttf" || fileType == "TTF" || fileType == "ttc" || fileType == "TTC" || fileType == "otf" || fileType == "OTF") {
+            targetFileType = "ttf";
+            targetFile = files[i];
+        }
+        if (targetFileType != "Composition" && targetFileType != "aeFile") {
+            if (fileType == "jpg" || fileType == "JPG" || fileType == "jpeg" || fileType == "bmp" || fileType == "ai" || fileType == "psd" || fileType == "PSD" || fileType == "wav" || fileType == "eps" || fileType == "EPS" || fileType == "tif" || fileType == "mp4" || fileType == "mov" || fileType == "avi") {
+                targetFileType = "file";
+                targetFile = files[i];
+            }
+        }
+        if (targetFileType != "Composition" && targetFileType != "aeFile") {
+            if (fileType == "ffx") {
+                targetFileType = "ffx";
+                targetFile = files[i];
+            }
+        }
+        if (fileType == "png" && files.length == 1) {
+            targetFileType = "file";
+            targetFile = files[i];
+            break;
+        }
+    }
+    try {
+        if (targetFileType == "ffx") {
+            if (targetFile.exists !== true) {
+                alert("preset nout found...")
+            } else {
+                app.beginUndoGroup("Apply preset");
+                try {
+                    selectedLayer = app.project.activeItem.selectedLayers[0];
+                    selectedLayer.selected = true;
+                } catch (e) {
+                    alert("Select your layer for apply this preset.");
+                    return;
+                }
+                if (clickType == 1) {
+                    try {
+                        var numP = selectedLayer.property("ADBE Effect Parade").numProperties;
+                        for (var j = 1; j <= numP; j += 1) {
+                            selectedLayer.property("ADBE Effect Parade").property(1).remove()
+                        }
+                        selectedLayer.selected = true;
+                    } catch (e) {
+
+                    }
+                }
+                try {
+                    selectedLayer.applyPreset(targetFile);
+                    setMarkerExpressions(selectedLayer, 0);
+                    try {
+                        for (var i = 0; i < selectedLayer.property("ADBE Effect Parade").numProperties; i += 1) {
+                            selectedLayer.property("ADBE Effect Parade").property(i + 1).selected = false
+                        }
+                        selectedLayer.selected = true;
+                    } catch (e) {
+
+                    }
+                    return;
+                } catch (e) {
+                    alert(e);
+                    return;
+                }
+                return;
+            }
+            app.endUndoGroup();
+        }
+        if (clickType == 0) {
+            if (mainComp.comment.toLowerCase().search(filePath.toLowerCase().replace("(", "\\(").replace(")", "\\)")) != -1) {
+                var importedItem = app.project.itemByID(parseInt(mainComp.comment.split("||" + filePath + ":")[1].split("||")[0]));
+                tempComp = importedItem;
+                mainComp.comment = "||" + filePath + ":" + tempComp.id + "||" + mainComp.comment;
+                try {
+                    if (tempComp.comment.slice(tempComp.comment.length - 1, tempComp.comment.length) == "*") {
+                        copyLayers(tempComp);
+                        if (checkVector(tempComp)) {
+                            tempComp.remove();
+                            importedItem.remove();
+                        }
+                        importedLayer.selected = false;
+                    } else {
+                        var importedLayer = mainComp.layers.add(tempComp);
+                        importedLayer.selected = true;
+                        mainComp.selected = true;
+                    }
+                } catch (e) {
+
+                }
+                for (var i = 0; i < mainComp.selectedLayers.length; i += 1) {
+                    mainComp.selectedLayers[i].startTime = mainComp.time + mainComp.selectedLayers[i].inPoint
+                }
+                if (mainComp.selectedLayers.length == 1 && mainComp.selectedLayers[0].property("marker").numKeys == 1) {
+                    mainComp.selectedLayers[0].startTime = mainComp.selectedLayers[0].startTime - (mainComp.selectedLayers[0].property("marker").keyTime(1) - mainComp.selectedLayers[0].startTime)
+                }
+                return;
+            }
+        }
+    } catch (e) {
+
+    }
+    if (targetFileType == "Composition") {
+        compFile = new File([pkgFolder + "/SaveObjects_Assets/" + filePath + "/Composition/" + filePath.split("/")[1] + ".aep"]);
+        var importedItem = app.project.importFile(new ImportOptions(compFile));
+    } else if (targetFileType == "mrk") {
+        var selectedLayer = mainComp.selectedLayers[0];
+        app.beginUndoGroup("Set Markers");
+        var p = targetFile;
+        p.encoding = "UTF8";
+        p.open("r");
+        var content = p.read();
+        p.close();
+        allMarkers = content.split("Name:");
+        numMarkers = content.split("Name:").length;
+        Offset = parseInt(content.split("Offset Frames:")[1]);
+        for (var j = 1; j <= numMarkers - 1; j += 1) {
+            markerIndex = allMarkers[j].split(" Time:");
+            var myMarkerVal = new MarkerValue(markerIndex[0]);
+            timeMarker = parseFloat(markerIndex[1].split(" duration:")[0]);
+            timeDuration = parseFloat(markerIndex[1].split(" duration:")[1]);
+            myMarkerVal.duration = timeDuration;
+            selectedLayer.property("ADBE Marker").setValueAtTime(timeMarker + ((1 / app.project.activeItem.frameRate) * Offset), myMarkerVal);
+        }
+        app.endUndoGroup();
+        return;
+    } else if (targetFileType == "exp") {
+        app.beginUndoGroup("Apply expression");
+        var selectedProperties = app.project.activeItem.selectedLayers[0].selectedProperties[0];
+        var p = targetFile;
+        p.encoding = "UTF8";
+        p.open("r");
+        var content = p.read();
+        p.close();
+        if (content.split("</jsx>").length >= 2) {
+            jsxCode = content.split("<jsx>")[1].split("</jsx>")[0];
+            try {
+                eval(jsxCode);
+            } catch (e) {
+
+            }
+            content = content.split("</jsx>")[1];
+        }
+        var composition = app.project.activeItem;
+        var selectedProperties = composition.selectedProperties;
+        for (var sp = 0; sp < keyTimesArray.length; sp++) {
+            if (selectedProperties[i].canSetExpression) {
+                var expression = content;
+                selectedProperties[i].expression = expression;
+            }
+        }
+        app.endUndoGroup();
+        return;
+    } else if (targetFileType == "msk") {
+        var tempDataFile = targetFile;
+        tempDataFile.open("r");
+        var tempData = tempDataFile.read();
+        var ratio1 = 1 / parseFloat(tempData.split("Scale=")[1].split(";")[0]);
+        tempDataFile.close();
+        var tempFile = targetFile;
+        tempFile.open("w");
+        tempFile.write(tempData);
+        tempFile.close();
+        $.evalFile(tempFile);
+        app.beginUndoGroup("Apply Masks ");
+        if (app.project.activeItem != null && app.project.activeItem instanceof CompItem) {
+            comp = app.project.activeItem;
+        } else {
+            comp = app.project.items.addComp(shape.name, 3840, 2160, 1, shape.duration, 30);
+            comp.openInViewer();
+        }
+        var elementLayer = app.project.activeItem.selectedLayers[0];
+        var maskProperty = elementLayer.property("ADBE Mask Parade");
+        var tempShape = new Shape();
+        for (var i = 1; i <= shape.numMasks; i += 1) {
+            thisMask = maskProperty.addProperty("ADBE Mask Atom");
+            thisMask.name = "Mask " + i.toString();
+            thisMask.color = shape.maskColours[i - 1];
+            getMaskMode(thisMask, shape.maskModes[i - 1]);
+            for (var t = 0; t < shape.pathStaticVertices[i - 1].length; t += 1) {
+                shape.pathStaticVertices[i - 1][t] /= ratio1;
+                shape.pathStaticInTangents[i - 1][t] /= ratio1;
+                shape.pathStaticOutTangents[i - 1][t] /= ratio1;
+            }
+            tempShape.vertices = shape.pathStaticVertices[i - 1];
+            tempShape.inTangents = shape.pathStaticInTangents[i - 1];
+            tempShape.outTangents = shape.pathStaticOutTangents[i - 1];
+            thisMask.property(1).setValue(tempShape);
+            thisMask.property(2).setValue([shape.featherStaticValues[i - 1], shape.featherStaticValues[i - 1]]);
+            thisMask.property(3).setValue(shape.opacityStaticValues[i - 1]);
+            thisMask.property(4).setValue(shape.expansionStaticValues[i - 1]);
+            if (shape.numPathKeys[i - 1] > 0) {
+                for (var k = 0; k < shape.numPathKeys[i - 1]; k += 1) {
+                    tempShape.vertices = shape.pathVerticesKeyedValues[i - 1][k];
+                    tempShape.inTangents = shape.pathInTangentsKeyedValues[i - 1][k];
+                    tempShape.outTangents = shape.pathOutTangentsKeyedValues[i - 1][k];
+                    thisMask.property(1).setValueAtTime(shape.pathVerticesKeyedTimes[i - 1][k], tempShape);
+                }
+            }
+            if (shape.numFeatherKeys[i - 1] > 0) {
+                thisMask.property(2).setValuesAtTimes(shape.featherKeyedTimes[i - 1], shape.featherKeyedValues[i - 1]);
+            }
+            if (shape.numOpacityKeys[i - 1] > 0) {
+                thisMask.property(3).setValuesAtTimes(shape.opacityKeyedTimes[i - 1], shape.opacityKeyedValues[i - 1]);
+            }
+            if (shape.numExpansionKeys[i - 1] > 0) {
+                thisMask.property(4).setValuesAtTimes(shape.expansionKeyedTimes[i - 1], shape.expansionKeyedValues[i - 1]);
+            }
+            for (var m = 1; m <= thisMask.numProperties; m += 1) {
+                for (var e = 1; e <= thisMask.property(m).numKeys; e += 1) {
+                    thisMask.property(m).setInterpolationTypeAtKey(e, KeyframeInterpolationType.HOLD, KeyframeInterpolationType.HOLD);
+                }
+            }
+        }
+
+        function getMaskMode(property, num) {
+            switch (num) {
+                case 6812:
+                    property.maskMode = MaskMode.NONE;
+                    break;
+                case 6813:
+                    property.maskMode = MaskMode.ADD;
+                    break;
+                case 6814:
+                    property.maskMode = MaskMode.SUBTRACT;
+                    break;
+                case 6815:
+                    property.maskMode = MaskMode.INTERSECT;
+                    break;
+                case 6816:
+                    property.maskMode = MaskMode.LIGHTEN;
+                    break;
+                case 6817:
+                    property.maskMode = MaskMode.DARKEN;
+                    break;
+                case 6818:
+                    property.maskMode = MaskMode.DIFFERENCE;
+                    break;
+            }
+        }
+        app.endUndoGroup();
+        return;
+    } else {
+        if (targetFileType == "spd") {
+            var selectedProperties = app.project.activeItem.selectedLayers[0].selectedProperties[0];
+            var p = targetFile;
+            p.encoding = "UTF8";
+            p.open("r");
+            var content = p.read();
+            p.close();
+            setSpeed(content);
+            return;
+        }
+    }
+    if (targetFileType == "aeFile") {
+        var importedItem = app.project.importFile(new ImportOptions(targetFile));
+    } else {
+        if (targetFileType == "file") {
+            var importedItem = app.project.importFile(new ImportOptions(targetFile));
+            mainComp.comment = "||" + filePath + ":" + importedItem.id + "||" + mainComp.comment;
+            var importedLayer = mainComp.layers.add(importedItem);
+            importedLayer.startTime = mainComp.time;
+            return;
+        }
+    }
+    if (targetFileType == "ttf") {
+        app.beginUndoGroup("Apply font");
+        if (mainComp.selectedLayers.length == 0) {
+            mainComp.layers.addText("MotionCodes");
+        }
+        if (mainComp.selectedLayers[0].source instanceof CompItem) {
+            preCompId = mainComp.selectedLayers[0].source.id;
+            preComp = app.project.itemByID(preCompId);
+            for (var i = 1; i <= preComp.numLayers; i += 1) {
+                myTextLayer = preComp.layer(i);
+                try {
+                    var mySourceText = myTextLayer.property("ADBE Text Properties").property("ADBE Text Document");
+                    var myTextDoc = mySourceText.value;
+                    myTextDoc.font = filePath.split("/")[1];
+                    mySourceText.setValue(myTextDoc);
+                } catch (e) {
+
+                }
+            }
+            return;
+        }
+        for (var i = 0; i < app.project.activeItem.selectedLayers.length; i += 1) {
+            myTextLayer = app.project.activeItem.selectedLayers[i];
+            try {
+                var mySourceText = myTextLayer.property("ADBE Text Properties").property("ADBE Text Document");
+                var myTextDoc = mySourceText.value;
+                myTextDoc.font = filePath.split("/")[1];
+                mySourceText.setValue(myTextDoc);
+            } catch (e) {
+
+            }
+        }
+        app.endUndoGroup();
+        return;
+    }
+    if (targetFileType == "jsx") {
+        app.beginUndoGroup("Apply Jsx");
+        $.evalFile(targetFile);
+        app.endUndoGroup();
+        return;
+    }
+    try {
+        importedItem.name = filePath.split("/")[1];
+    } catch (e) {
+
+    }
+    if (app.project.activeItem == null) {
+        return;
+    }
+    try {
+        if (tempComp.comment.split("/").length != 2) {
+            tempComp.comment = filePath
+        }
+    } catch (e) {
+
+    }
+    try {
+        searchFolder(importedItem, filePath);
+    } catch (e) {
+
+    }
+    tempComp = searchedItem;
+    try {
+        mainComp.comment = "||" + filePath + ":" + tempComp.id + "||" + mainComp.comment;
+    } catch (e) {
+
+    }
+    try {
+        if (tempComp.comment.slice(tempComp.comment.length - 1, tempComp.comment.length) == "*") {
+            copyLayers(tempComp);
+            if (checkVector(tempComp)) {
+                tempComp.remove();
+                importedItem.remove();
+            }
+            importedLayer.selected = false;
+        } else {
+            var importedLayer = mainComp.layers.add(tempComp);
+            importedLayer.selected = true;
+            mainComp.selected = true;
+        }
+    } catch (e) {
+
+    }
+    for (var i = 0; i < mainComp.selectedLayers.length; i += 1) {
+        mainComp.selectedLayers[i].startTime = mainComp.time + mainComp.selectedLayers[i].inPoint
+    }
+    if (mainComp.selectedLayers.length == 1 && mainComp.selectedLayers[0].property("marker").numKeys == 1) {
+        mainComp.selectedLayers[0].startTime = mainComp.selectedLayers[0].startTime - (mainComp.selectedLayers[0].property("marker").keyTime(1) - mainComp.selectedLayers[0].startTime)
+    }
+}
+
+function removeFolders(theFolder) {
+    for (var i = theFolder.numItems; i > 0; i--) {
+        app.project.item(i).selected = false;
+        if (theFolder.item(i) instanceof FolderItem) {
+            if (theFolder.item(i).numItems > 0) {
+                removeFolders(theFolder.item(i))
+            }
+            if (theFolder.item(i).numItems == 0) {
+                theFolder.item(i).remove()
+            }
+        }
+    }
+}
+
+function copyLayers(tempComp) {
+    mainComp = app.project.activeItem;
+    tempComp.openInViewer();
+    for (var i = 1; i <= tempComp.numLayers; i += 1) {
+        tempComp.layer(i).selected = true
+    }
+    app.executeCommand(19);
+    app.executeCommand(2004);
+    mainComp.selected = true;
+    mainComp.openInViewer();
+    app.executeCommand(20);
+    mainComp.selected = true;
+}
+
+function numPng(filePath) {
+    presetFolder = new Folder(pkgFolder + "/SaveObjects_Assets/" + filePath + "/Png");
+    sourceFiles1 = presetFolder.getFiles();
+    var typePre = "noPre";
+    var pngFile = new File(pkgFolder + "/SaveObjects_Assets/" + filePath + "/Png/3.png");
+    if (pngFile.exists == true) {
+        return sourceFiles1.length;
+    }
+    var gifFile = new File(pkgFolder + "/SaveObjects_Assets/" + filePath + "/" + filePath.split("/")[1] + ".gif");
+    if (gifFile.exists == true) {
+        return "gif";
+    }
+    return "noPre";
+}
+
+function saveSequence(scriptPath, filePath) {
+    assetsFolder = pkgFolder + "/SaveObjects_Assets/" + filePath;
+    mainComp = app.project.activeItem;
+    if (app.project.activeItem.selectedLayers.length != 0) {
+        if (app.project.activeItem.selectedLayers[0] instanceof CameraLayer && app.project.activeItem.selectedLayers.length == 1) {
+            copyFile(new File(scriptPath + "/icons/camera/ThumbNail/ThumbNail.png"), new File(assetsFolder + "/" + filePath.split("/")[1] + ".png"));
+            return;
+        }
+        if (app.project.activeItem.selectedLayers[0] instanceof LightLayer && app.project.activeItem.selectedLayers.length == 1) {
+            copyFile(new File(scriptPath + "/icons/light/ThumbNail/ThumbNail.png"), new File(assetsFolder + "/" + filePath.split("/")[1] + ".png"));
+            return;
+        }
+        if (app.project.activeItem.selectedLayers[0].hasVideo == false && app.project.activeItem.selectedLayers[0].hasAudio == true && app.project.activeItem.selectedLayers.length == 1) {
+            copyFile(new File(scriptPath + "/icons/audio/ThumbNail/ThumbNail.png"), new File(assetsFolder + "/" + filePath.split("/")[1] + ".png"));
+            return;
+        }
+    }
+    var tmpComp = app.project.items.addComp("temp", 200, 50, 1, 1, mainComp.frameRate);
+    tmpComp.duration = mainComp.duration;
+    mainCompTime = mainComp.time;
+    tmpComp.time = mainCompTime;
+    tmpComp.workAreaStart = mainComp.workAreaStart;
+    tmpComp.workAreaDuration = mainComp.workAreaDuration;
+    tmpComp.layers.add(mainComp);
+    if (tmpComp.workAreaDuration > 5) {
+        var r = false;
+        var dlg = new Window("dialog", "Save Objects:");
+        btnName = dlg.add("statictext", [10, 30, 300, 80], "The work area duration is more than 3 seconds\n(To save the preview video).\nDo you want to continue?", {
+            multiline: true
+        });
+        lineGroup = dlg.add("group {alignChildren: \"left\",orientation: \"row\"}");
+        button = lineGroup.add("button", undefined, "Yes, Continue");
+        button1 = lineGroup.add("button", undefined, "No, Set Single Frame ");
+        button2 = lineGroup.add("button", undefined, "Limit work area to 3s");
+        button.onClick = function() {
+            r = true;
+            dlg.close();
+        };
+        button1.onClick = function() {
+            tmpComp.workAreaStart = tmpComp.time;
+            tmpComp.workAreaDuration = 1 / tmpComp.frameRate;
+            r = true;
+            dlg.close();
+        };
+        button2.onClick = function() {
+            tmpComp.workAreaDuration = 3;
+            r = true;
+            dlg.close();
+        };
+        dlg.show();
+        if (r != true) {
+            return "cancel";
+        }
+    }
+    newLayer = tmpComp.layer(1);
+    try {
+        var s = parseInt(((tmpComp.width * tmpComp.pixelAspect) / newLayer.sourceRectAtTime(0, false).width) * 100);
+        newLayer.property("Scale").setValue([s, s]);
+        tmpComp.height = parseInt(newLayer.sourceRectAtTime(0, false).height);
+        tmpComp.height = parseInt(tmpComp.height * (s / 100));
+        if (tmpComp.height <= 60) {
+            tmpComp.height = 60
+        }
+        tmpComp.layer(1).property("ADBE Transform Group").position.setValue([parseInt(tmpComp.width / 2), parseInt(tmpComp.height / 2), 0]);
+    } catch (e) {
+
+    }
+    tmpComp.workAreaStart = mainComp.workAreaStart;
+    tmpComp.workAreaDuration = mainComp.workAreaDuration;
+    var startTime = tmpComp.workAreaStart;
+    var compFrameRate = 1 / tmpComp.frameDuration;
+    var endTime = parseInt((tmpComp.workAreaStart + tmpComp.workAreaDuration) * compFrameRate);
+    var compFps = (1 / tmpComp.frameDuration) * tmpComp.workAreaDuration;
+    delFile(new Folder(new Folder(pkgFolder + "").fsName + "/SaveObjects_Assets/" + filePath + "/Png"));
+    new Folder(new Folder(pkgFolder + "").fsName + "/SaveObjects_Assets/" + filePath + "/Png").create();
+    var nP = 0;
+    $.sleep(500);
+    tmpComp.saveFrameToPng(mainComp.time, File(assetsFolder + "/" + filePath.split("/")[1] + ".png"));
+    $.sleep(500);
+    for (var i = startTime * compFrameRate; i <= endTime; i += parseInt(compFrameRate / 10)) {
+        var fps1 = i / compFrameRate;
+        tmpComp.saveFrameToPng(fps1, File(assetsFolder + "/Png/" + nP+++".png"));
+    }
+    tmpComp.remove();
+}
+
+function collect($dir, fileName) {
+    var projectDir = new Folder($dir);
+    var footageDir = new Folder(projectDir.absoluteURI + "/(Footage)/");
+    projectDir.create();
+    flag = 0;
+    for (var i = 1; i <= app.project.numItems; i += 1) {
+        var item = app.project.item(i);
+        if (item instanceof FootageItem) {
+            if (flag == 0) {
+                footageDir.create();
+                flag == 1;
+            }
+            var targetDir = new Folder(footageDir.absoluteURI + "/" + item.parentFolder.name + "/");
+            if (!targetDir.exists) {
+                targetDir.create()
+            }
+            if (item.file != null && !item.footageMissing) {
+                var extension = item.file.name.substring(item.file.name.lastIndexOf(".") + 1).toLowerCase();
+                if (item.mainSource.isStill) {
+                    targetFile = new File(targetDir.absoluteURI + "/" + item.file.name);
+                    if (!targetFile.exists) {
+                        item.file.copy(targetDir.absoluteURI + "/" + item.file.name);
+                        item.replace(targetFile);
+                    }
+                } else if (extension != "jpg" && extension != "jpeg" && extension != "png" && extension != "tga" && extension != "tif" && extension != "tiff" && extension != "exr" && extension != "bmp" && extension != "pxr" && extension != "pct" && extension != "hdr" && extension != "rla" && extension != "ai" && extension != "cin" && extension != "dpx") {
+                    targetFile = new File(targetDir.absoluteURI + "/" + item.file.name);
+                    if (!targetFile.exists) {
+                        item.file.copy(targetDir.absoluteURI + "/" + item.file.name);
+                        item.replace(targetFile);
+                    }
+                } else {
+                    var dossierSequence = item.file.parent;
+                    var frameSequence = dossierSequence.getFiles();
+                    var dossierSequenceTarget = new Folder(targetDir.absoluteURI + "/" + dossierSequence.name + "/");
+                    dossierSequenceTarget.create();
+                    targetFile = new File(dossierSequenceTarget.absoluteURI + "/" + item.file.name);
+                    if (!targetFile.exists) {
+                        for (var j = 0; j < frameSequence.length; j += 1) {
+                            frameSequence.copy(dossierSequenceTarget.absoluteURI + "/" + frameSequence.name);
+                        }
+                        item.replaceWithSequence(targetFile, true);
+                    }
+                    false;
+                    false;
+                    false;
+                }
+                false;
+            }
+            false;
+        }
+    }
+    app.project.save(File(projectDir.absoluteURI + "/" + fileName + ".aep"));
+    false;
+    false;
+}
+
+function copyFolder(sourceFolder, destinationFolder) {
+    var sourceChildrenArr = sourceFolder.getFiles();
+    for (var i = 0; i < sourceChildrenArr.length; i += 1) {
+        var sourceChild = sourceChildrenArr[i];
+        var destinationChildStr = destinationFolder.fsName + "/" + sourceChild.name;
+        if (sourceChild instanceof File) {
+            copyFile(sourceChild, new File(destinationChildStr));
+        } else {
+            copyFolder(sourceChild, new Folder(destinationChildStr));
+        }
+    }
+}
+
+function copyFile(sourceFile, destinationFile) {
+    createFolder(destinationFile.parent);
+    try {
+        sourceFile.copy(destinationFile);
+    } catch (e) {
+
+    }
+}
+
+function createFolder(folder) {
+    if (folder.parent !== null && !folder.parent.exists) {
+        createFolder(folder.parent);
+    }
+    folder.create();
+}
+try {
+    assetsFolder = new Folder(pkgFolder + "");
+    var assetsFiles = assetsFolder.getFiles();
+    pathScript = assetsFolder.fsName;
+} catch (e) {
+    pkgFolder = "~/Documents";
+    assetsFolder = new Folder(pkgFolder + "");
+    var assetsFiles = assetsFolder.getFiles();
+    pathScript = assetsFolder.fsName;
+}
+
+function btn_changeFolder(packageFolder1) {
+    var p = Folder.selectDialog("Select a Folder for SaveObjects package\nThe default folder is : \n" + packageFolder1 + "/SaveObjects_Assets");
+    if (p == packageFolder1) {
+        alert("This folder (" + packageFolder1 + ")is the same folder...");
+        return "error";
+    }
+    if (p != null) {
+        copyFolder(new Folder(pkgFolder + "/SaveObjects_Assets"), new Folder(p.fsName + "/SaveObjects_Assets"));
+        if (new Folder(p.fsName + "/SaveObjects_Assets").exists == true) {
+            alert("This Package moved to \n" + p.fsName)
+        } else {
+            alert("The package could not be moved to this folder.");
+            return "~/Documents";
+        }
+        pkgFolder = p.fsName;
+        return p;
+    } else {
+        return "error";
+    }
+}
+
+function btn_import(extentionPath) {
+    var p = Folder.selectDialog("Select a Folder For Import:");
+    folderPath = pathScript + "/SaveObjects_Assets";
+    try {
+        FolderTypro = p.name.slice(0, 12);
+        if (FolderTypro === "SaveObjects_") {
+            copyFolder(new Folder(p), new Folder(folderPath));
+            alert("This Pack (" + p.name + ") Added");
+        } else {
+            var r = confirm("This Folder Is not a SaveObjects Pack.\nDo you want to continue?");
+            if (r != true) {
+                return;
+            }
+            foldering(p, folderPath + "/" + p.name);
+        }
+    } catch (e) {
+        return "error";
+    }
+    return p.name;
+}
+
+function foldering(filePath, toFolder) {
+    folder = new Folder(filePath);
+    var files = folder.getFiles();
+    var N = files.length;
+    for (var n = 0; n < N; n += 1) {
+        if (files[n] instanceof File) {
+            if (files[n].name.slice(files[n].name.length - 4, files[n].name.length) == ".mp3") {
+                copyFile(files[n], new File(toFolder + "/" + files[n].name.split(".")[0] + "/" + files[n].name.split(".")[0] + ".wav"))
+            } else {
+                copyFile(files[n], new File(toFolder + "/" + files[n].name.split(".")[0] + "/" + files[n].name))
+            }
+        } else {
+            folder1 = new Folder(filePath[n]);
+            var files1 = folder.getFiles();
+            var M = files1.length;
+            for (var m = 0; m < M; m += 1) {
+                if (files1[m] instanceof File) {
+                    if (files[n].name.slice(files[n].name.length - 4, files[n].name.length) == ".mp3") {
+                        copyFile(files[n], new File(toFolder + "/" + files1[m].name.split(".")[0] + "/" + files1[m].name.split(".")[0] + ".wav"))
+                    } else {
+                        copyFile(files[n], new File(toFolder + "/" + files1[m].name.split(".")[0] + "/" + files1[m].name))
+                    }
+                } else {
+                    foldering(files1[m], toFolder);
+                }
+            }
+        }
+    }
+}
+
+function btn_backup(folderPath) {
+    var current_time = Date.now();
+    var p = Folder.selectDialog("Select a folder to export the package:");
+    folderPath = pathScript + "/SaveObjects_Assets";
+    try {
+        copyFolder(new Folder(folderPath), new Folder(p.toString() + "/SaveObjects_Assets(" + current_time + ")"));
+        alert("The backup operation was successful...");
+    } catch (e) {
+
+    }
+}
+
+function btn_help(folderPath) {
+    $.evalFile(folderPath + "/jsx/help.jsx");
+}
+
+function evalWeb(msg) {
+
+}
+
+function btn_MC() {
+    if (app.preferences.getPrefAsLong("Main Pref Section", "Pref_SCRIPTING_FILE_NETWORK_SECURITY") != 1) {
+        alert("Please tick the \"Allow Scripts to Write Files and Access Network\" checkbox if Preferences > General");
+        app.executeCommand(2359);
+    }
+    var os = system.osName;
+    if (!os.length) {
+        os = $.os;
+    }
+    app_os = os.indexOf("Win") != -1 ? "Win" : "Mac";
+    var url = "https://aescripts.com/authors/m-p/motioncodes/";
+    if (app_os == "Win") {
+        system.callSystem("explorer " + url);
+    } else {
+        system.callSystem("open " + url);
+    }
+}
+
+function searchItems(searchCase) {
+    if (searchCase == "") {
+        return decodeURIComponent(getFolders());
+    }
+    var mainFolders = searchResult.split("--");
+    var find = "";
+    for (var i = 0; i < mainFolders.length; i += 1) {
+        if (mainFolders[i].toLowerCase().search(searchCase) != -1) {
+            find = find + mainFolders[i].split("::")[0] + "||"
+        }
+    }
+    return decodeURIComponent(find);
+}
+
+
+function setMarkerExpressions(rootObj, nestingLevel) {
+    var countProps = rootObj.numProperties;
+    for (var propIndex = 1; propIndex <= countProps; propIndex += 1) {
+        var prop = rootObj.property(propIndex);
+        try {
+            if (prop.expression.match("marker") == "marker") {
+                markerName = prop.expression.split("marker.key(\"")[1].split("\")")[0];
+                var layerMarker = new MarkerValue(markerName);
+                layerMarker.eventCuePoint = true;
+                var newMarkerParameters = {};
+                layerMarker.setParameters(newMarkerParameters);
+                selectedLayer.property("ADBE Marker").setValueAtTime(app.project.activeItem.time, layerMarker);
+            }
+        } catch (e) {
+
+        }
+        if (prop.numProperties > 0) {
+            setMarkerExpressions(prop, nestingLevel + 1)
+        }
+    }
+}
+
+function collectFonts(folderPath, type) {
+    projpath = decodeURIComponent(folderPath);
+    var folderName = "Fonts";
+    if ($.os.indexOf("Macintosh") != -1) {
+        if (type == "saveFont") {
+            fullFolderName = projpath
+
+        } else {
+            fullFolderName = projpath + "/" + folderName
+        }
+    } else {
+        if (type == "saveFont") {
+            fullFolderName = projpath
+        } else {
+            fullFolderName = projpath + "\\" + folderName
+        }
+    }
+
+    function checkInAry(checkAryforthisItem, aryToCheck) {
+        var founditem = 0;
+        if (aryToCheck.length > 0) {
+            for (var cai = 0; cai < aryToCheck.length; cai += 1) {
+                var curCheck = aryToCheck[cai];
+                if (curCheck == checkAryforthisItem) {
+                    founditem = 1;
+                    break;
+                }
+            }
+        } else {
+            if (aryToCheck.length == 0) {
+                return 0;
+            }
+        }
+        if (founditem == 1) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
+    function preFontSniffAe() {
+        var proj = app.project;
+        itemTotal = app.project.numItems;
+        var fontNameAry = [];
+        for (var i = 1; i <= itemTotal; i += 1) {
+            var curItem = proj.item(i);
+            if (curItem instanceof CompItem) {
+                setLayerNum = curItem.numLayers;
+                for (var j = 1; j <= setLayerNum; j += 1) {
+                    var curLayer = curItem.layer(j);
+                    if (curLayer instanceof TextLayer) {
+                        var textProp = curLayer.property("ADBE Text Properties").property("ADBE Text Document");
+                        var textVal = textProp.value;
+                        var curfont = textVal.font;
+                        if (checkInAry(curfont, fontNameAry) == 0) {
+                            fontNameAry.push(curfont);
+                        }
+                    }
+                }
+            }
+        }
+        if (fontNameAry.length > 0) {
+            return fontNameAry;
+        } else {
+            return 0;
+        }
+    }
+
+    function fontSniffAe() {
+        var proj = app.project;
+        itemTotal = app.project.numItems;
+        var adobeAry = [];
+        var fontNameAry = [];
+        var fakeNameAry = [];
+        var realNameAry = [];
+        var emptyStrFontAry = [];
+        for (var i = 1; i <= itemTotal; i += 1) {
+            var curItem = proj.item(i);
+            if (curItem instanceof CompItem) {
+                setLayerNum = curItem.numLayers;
+                for (var j = 1; j <= setLayerNum; j += 1) {
+                    var curLayer = curItem.layer(j);
+                    if (type == "saveFont") {
+                        var curLayer = app.project.activeItem.selectedLayers[0]
+                    }
+                    if (curLayer instanceof TextLayer) {
+    var textProp = curLayer.property("ADBE Text Properties").property("ADBE Text Document");
+    var textVal = textProp.value;
+    var curfont = textVal.font;
+    if (checkInAry(curfont, fontNameAry) == 0) {
+        fontNameAry.push(curfont);
+    }
+    var curfontLoc = decodeURIComponent(textVal.fontLocation.toString());
+    if (curfontLoc == "") {
+        if (checkInAry(curfont, emptyStrFontAry) == 0) {
+            emptyStrFontAry.push(curfont);
+        }
+    
+                        } else {
+                            if (curfontLoc.indexOf("/livetype/") != -1 || curfontLoc.indexOf("\\livetype\\") != -1) {
+                                if (checkInAry(curfont, adobeAry) == 0) {
+                                    adobeAry.push(curfont);
+                                }
+                            } else {
+                                if ($.os.indexOf("Macintosh") != -1) {
+                                    curFontRealName = curfontLoc.substr(curfontLoc.lastIndexOf("/") + 1, curfontLoc.length);
+                                } else {
+                                    curFontRealName = curfontLoc.substr(curfontLoc.lastIndexOf("\\") + 1, curfontLoc.length);
+                                }
+                                if (checkInAry(curFontRealName, realNameAry) == 0) {
+                                    realNameAry.push(curFontRealName);
+                                }
+                                if (checkInAry(curfont, fakeNameAry) == 0) {
+                                    fakeNameAry.push(curfont);
+                                }
+                                if ($.os.indexOf("Macintosh") != -1) {
+                                    newFullFolderFontName = fullFolderName + "/" + curFontRealName;
+                                } else {
+                                    newFullFolderFontName = fullFolderName + "\\" + curFontRealName;
+                                }
+                                try {
+                                    File(curfontLoc).copy(File(newFullFolderFontName));
+                                } catch (er) {
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (fontNameAry.length > 0) {
+            globAdobeAry = adobeAry;
+            globFontNameAry = fontNameAry;
+            globRealNameAry = realNameAry;
+            globFakeNameAry = fakeNameAry;
+            globUnfoundNameAry = emptyStrFontAry;
+            return fontNameAry;
+        } else {
+            return 0;
+        }
+    }
+
+    function fontCollect_main() {
+        totalAETime = 0;
+        var newFS = preFontSniffAe();
+        if (newFS == 0) {
+
+        } else {
+            fontCopyTo = new Folder(fullFolderName);
+            fontCopyTo.create();
+            fontSniffAe();
+        }
+    }
+    fontCollect_main();
+}
+
+function setSpeed(content) {
+    app.beginUndoGroup("Set Speed");
+    easeInInfluArray0 = content.split("easeInInfluArray0=")[1].split("\n")[0].split(",");
+    easeInSpeed0 = content.split("easeInSpeed0=")[1].split("\n")[0].split(",");
+    easeOutSpeed0 = content.split("easeOutSpeed0=")[1].split("\n")[0].split(",");
+    easeOutInfluArray0 = content.split("easeOutInfluArray0=")[1].split("\n")[0].split(",");
+    easeInInfluArray1 = content.split("easeInInfluArray1=")[1].split("\n")[0].split(",");
+    easeInSpeed1 = content.split("easeInSpeed1=")[1].split("\n")[0].split(",");
+    easeOutSpeed1 = content.split("easeOutSpeed1=")[1].split("\n")[0].split(",");
+    easeOutInfluArray1 = content.split("easeOutInfluArray1=")[1].split("\n")[0].split(",");
+    easeInInfluArray2 = content.split("easeInInfluArray2=")[1].split("\n")[0].split(",");
+    easeInSpeed2 = content.split("easeInSpeed2=")[1].split("\n")[0].split(",");
+    easeOutSpeed2 = content.split("easeOutSpeed2=")[1].split("\n")[0].split(",");
+    easeOutInfluArray2 = content.split("easeOutInfluArray2=")[1].split("\n")[0].split(",");
+    for (var n = 0; n < app.project.activeItem.selectedProperties.length; n += 1) {
+        try {
+            var prop = app.project.activeItem.selectedProperties[n];
+            var i = 1;
+            var x = 1;
+            prop1D = "6417";
+            prop2D = "6413";
+            prop3D = "6414";
+            prop2D1 = "6416";
+            prop1D1 = "6415";
+            for (i; i <= prop.selectedKeys.length; i++) {
+                if (x == easeInSpeed0.length && easeInSpeed0.length != (prop.selectedKeys.length + 1)) {
+                    x = 1;
+                }
+                try {
+                    var easeIn0 = new KeyframeEase(easeInSpeed0[x - 1], easeInInfluArray0[x - 1]);
+                    var easeOut0 = new KeyframeEase(easeOutSpeed0[x - 1], easeOutInfluArray0[x - 1]);
+                    prop.setTemporalEaseAtKey(prop.selectedKeys[i - 1], [easeIn0], [easeOut0]);
+                } catch (e) {
+                    if (prop.propertyValueType == prop2D || prop.propertyValueType == prop2D1) {
+                        var easeIn0 = new KeyframeEase(easeInSpeed0[x - 1], easeInInfluArray0[x - 1]);
+                        var easeOut0 = new KeyframeEase(easeOutSpeed0[x - 1], easeOutInfluArray0[x - 1]);
+                        var easeIn1 = new KeyframeEase(easeInSpeed1[x - 1], easeInInfluArray1[x - 1]);
+                        var easeOut1 = new KeyframeEase(easeOutSpeed1[x - 1], easeOutInfluArray1[x - 1]);
+                        prop.setTemporalEaseAtKey(prop.selectedKeys[i - 1], [easeIn0, easeIn1], [easeOut0, easeOut1]);
+                    }
+                    if (prop.propertyValueType == prop3D) {
+                        var easeIn0 = new KeyframeEase(easeInSpeed0[x - 1], easeInInfluArray0[x - 1]);
+                        var easeOut0 = new KeyframeEase(easeOutSpeed0[x - 1], easeOutInfluArray0[x - 1]);
+                        var easeIn1 = new KeyframeEase(easeInSpeed1[x - 1], easeInInfluArray1[x - 1]);
+                        var easeOut1 = new KeyframeEase(easeOutSpeed1[x - 1], easeOutInfluArray1[x - 1]);
+                        var easeIn2 = new KeyframeEase(easeInSpeed2[x - 1], easeInInfluArray2[x - 1]);
+                        var easeOut2 = new KeyframeEase(easeOutSpeed2[x - 1], easeOutInfluArray2[x - 1]);
+                        prop.setTemporalEaseAtKey(prop.selectedKeys[i - 1], [easeIn0, easeIn1, easeIn2], [easeOut0, easeOut1, easeOut2]);
+                    }
+                }
+                x++;
+            }
+        } catch (e) {
+
+        }
+    }
+    app.endUndoGroup();
+
+    function findProjectItem(searchFolder, recursion, userData) {
+       var i, il;
+for (i = 1, il = searchFolder.items.length; i <= il; i++) {
+    folderItem = searchFolder.items[i];
+}
+
+            if (propertiesMatch(folderItem, userData)) {
+                return folderItem;
+            } else {
+                if (recursion === true && folderItem instanceof FolderItem && folderItem.numItems > 0) {
+                    var item = findProjectItem(folderItem, recursion, userData);
+                    if (item !== null) {
+                        return item;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    function propertiesMatch(projectItem, userData) {
+        if (typeof userData === "undefined") {
+            return true;
+        }
+        for (var propertyName in userData) {
+            if (!userData.hasOwnProperty(propertyName)) {
+                continue;
+            }
+            if (typeof userData[propertyName] !== typeof projectItem[propertyName]) {
+                return false;
+            }
+            if (isArray(userData[propertyName]) && isArray(projectItem[propertyName])) {
+                if (userData[propertyName].toString() !== projectItem[propertyName].toString()) {
+                    return false;
+                }
+            } else if (typeof userData[propertyName] === "object" && typeof projectItem[propertyName] === "object") {
+                if (!propertiesMatch(projectItem[propertyName], userData[propertyName])) {
+                    return false;
+                }
+            } else {
+                if (projectItem[propertyName] !== userData[propertyName]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    function isArray(object) {
+        return Object.prototype.toString.apply(object) === "[object Array]";
+    }
+
+    function applyEasing(property, keyTimesArray, easeInArray, easeOutArray, keyInterpolationArray) {
+        var i, il;
+for (i = 0, il = keyTimesArray.length; i < il; i++) {
+    // 在此处放置循环内的代码
+}
+
+            if (property.propertyValueType === PropertyValueType.TwoD) {
+                easeIn0 = new KeyframeEase(easeInArray[0][i][0], easeInArray[1][i][0]);
+                easeOut0 = new KeyframeEase(easeOutArray[0][i][0], easeOutArray[1][i][0]);
+                easeIn1 = new KeyframeEase(easeInArray[0][i][1], easeInArray[1][i][1]);
+                easeOut1 = new KeyframeEase(easeOutArray[0][i][1], easeOutArray[1][i][1]);
+                property.setTemporalEaseAtKey(i + 1, [easeIn0, easeIn1], [easeOut0, easeOut1]);
+            } else if (property.propertyValueType === PropertyValueType.ThreeD) {
+                easeIn0 = new KeyframeEase(easeInArray[0][i][0], easeInArray[1][i][0]);
+                easeOut0 = new KeyframeEase(easeOutArray[0][i][0], easeOutArray[1][i][0]);
+                easeIn1 = new KeyframeEase(easeInArray[0][i][1], easeInArray[1][i][1]);
+                easeOut1 = new KeyframeEase(easeOutArray[0][i][1], easeOutArray[1][i][1]);
+                easeIn2 = new KeyframeEase(easeInArray[0][i][2], easeInArray[1][i][2]);
+                easeOut2 = new KeyframeEase(easeOutArray[0][i][2], easeOutArray[1][i][2]);
+                property.setTemporalEaseAtKey(i + 1, [easeIn0, easeIn1, easeIn2], [easeOut0, easeOut1, easeOut2]);
+            } else {
+                easeIn = new KeyframeEase(easeInArray[0][i], easeInArray[1][i]);
+                easeOut = new KeyframeEase(easeOutArray[0][i], easeOutArray[1][i]);
+                if (keyInterpolationArray[1][i] !== KeyframeInterpolationType.HOLD) {
+                    property.setTemporalEaseAtKey(i + 1, [easeIn], [easeOut]);
+                } else {
+                    property.setTemporalEaseAtKey(i + 1, [easeIn]);
+                }
+            }
+            property.setInterpolationTypeAtKey(i + 1, keyInterpolationArray[0][i], keyInterpolationArray[1][i]);
+        }
+    function applySpatialTangents(property, keyTimesArray, inSpatialTangentsArray, outSpatialTangentsArray) {
+    var sp;
+    var spl = keyTimesArray.length;
+    for (sp = 0; sp < spl; sp++) {
+        try {
+            property.setSpatialTangentsAtKey(sp + 1, inSpatialTangentsArray[sp], outSpatialTangentsArray[sp]);
+        } catch (error) {
+            // 在此处处理异常
+            console.error("Error in applySpatialTangents: " + error);
+    
+                property.setSpatialTangentsAtKey(sp + 1, inSpatialTangentsArray[sp], outSpatialTangentsArray[sp]);
+        }
+    }
+}
